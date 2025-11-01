@@ -5,12 +5,16 @@ const Home = () => {
   const { user } = useAuth()
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-sky-50 via-white to-emerald-50 px-6 py-16 text-center">
+    <main
+      id="landing-content"
+      className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-sky-50 via-white to-emerald-50 px-6 py-16 text-center"
+      aria-labelledby="landing-title"
+    >
       <div className="max-w-2xl space-y-6">
         <span className="inline-flex items-center rounded-full bg-primary/10 px-4 py-1 text-sm font-medium text-primary">
           Travel Checklist
         </span>
-        <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
+        <h1 id="landing-title" className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
           Plan smarter, travel lighter.
         </h1>
         <p className="text-lg text-gray-600">
@@ -20,7 +24,7 @@ const Home = () => {
           {user ? (
             <Link
               to="/dashboard"
-              className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-primary/90"
+              className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               Go to Dashboard
             </Link>
@@ -28,13 +32,13 @@ const Home = () => {
             <>
               <Link
                 to="/register"
-                className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-primary/90"
+                className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 Create an Account
               </Link>
               <Link
                 to="/login"
-                className="inline-flex items-center justify-center rounded-lg border border-gray-200 px-6 py-3 text-base font-semibold text-gray-700 transition hover:bg-gray-50"
+                className="inline-flex items-center justify-center rounded-lg border border-gray-200 px-6 py-3 text-base font-semibold text-gray-700 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 Sign In
               </Link>
@@ -42,7 +46,7 @@ const Home = () => {
           )}
         </div>
       </div>
-    </div>
+    </main>
   )
 }
 

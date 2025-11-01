@@ -26,10 +26,24 @@ export const deleteTrip = async (tripId) => {
   await api.delete(`/v1/trips/${tripId}`)
 }
 
+export const exportTripData = async (tripId, params = {}) => {
+  const response = await api.get(`/v1/trips/${tripId}/export`, {
+    params,
+    responseType: 'blob',
+  })
+
+  return {
+    blob: response.data,
+    contentType: response.headers['content-type'],
+    disposition: response.headers['content-disposition'],
+  }
+}
+
 export default {
   getTrips,
   getTripById,
   createTrip,
   updateTrip,
   deleteTrip,
+  exportTripData,
 }

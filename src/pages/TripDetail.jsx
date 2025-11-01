@@ -6,14 +6,18 @@ import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Skeleton } from '../components/ui/skeleton'
+import { Label } from '../components/ui/label'
+import { Select } from '../components/ui/select'
+import { Loader2 } from 'lucide-react'
 import { TravelersPanel } from '../components/trips/TravelersPanel'
 import { ChecklistPanel } from '../components/trips/ChecklistPanel'
 import { DocumentsPanel } from '../components/trips/DocumentsPanel'
 import { CollaboratorsPanel } from '../components/trips/CollaboratorsPanel'
 import { ItineraryPanel } from '../components/trips/ItineraryPanel'
 import { ExpensesPanel } from '../components/trips/ExpensesPanel'
-import { getTripById, deleteTrip } from '../services/tripService'
+import { getTripById, deleteTrip, exportTripData } from '../services/tripService'
 import { formatDateRange, formatDate } from '../utils/dateUtils'
+import { downloadBlob, extractFilename } from '../utils/download'
 import { useTravelersStore } from '../stores/travelersStore'
 import { useChecklistStore } from '../stores/checklistStore'
 import { useDocumentsStore } from '../stores/documentsStore'
@@ -37,11 +41,24 @@ const overviewFields = [
   { label: 'Notes', key: 'notes', fallback: 'No notes yet' },
 ]
 
+const exportResourceOptions = [
+  { value: 'trip', label: 'Trip summary' },
+  { value: 'budget', label: 'Budget & expenses' },
+]
+
+const exportFormatOptions = [
+  { value: 'pdf', label: 'PDF' },
+  { value: 'csv', label: 'CSV' },
+]
+
 const TripDetail = () => {
   const { tripId } = useParams()
   const navigate = useNavigate()
   const [trip, setTrip] = useState(null)
   const [isLoadingTrip, setIsLoadingTrip] = useState(true)
+  const [exportResource, setExportResource] = useState('trip')
+  const [exportFormat, setExportFormat] = useState('pdf')
+  const [isExporting, setIsExporting] = useState(false)
 
   const {
     travelers,
@@ -174,6 +191,31 @@ const TripDetail = () => {
     }),
     shallow
   )
+
+  const handleExport = async () => {
+    if (!trip) return
+
+    setIsExporting(true)
+    try {
+      const result = await exportTripData(tripId, {
+        resource: exportResource,
+        format: exportFormat,
+      })
+
+      const filename = extractFilename(
+        result.disposition,
+        `${(trip.name || 'trip').toLowerCase().replace(/\s+/g, '-')}-${exportResource}.${exportFormat}`
+      )
+
+      downloadBlob(result.blob, filename)
+      toast.success(`Export ready: ${exportResource} (${exportFormat.toUpperCase()})`)
+    } catch (error) {
+      const message = error.response?.data?.error?.message || 'Unable to export right now. Try again soon.'
+      toast.error(message)
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   useEffect(() => {
     let isActive = true
@@ -330,6 +372,72 @@ const TripDetail = () => {
           </Button>
         </div>
       </div>
+
+      <Card aria-labelledby="trip-export-title">
+        <CardHeader className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <CardTitle id="trip-export-title" className="text-lg font-semibold text-slate-900">
+              Export data
+            </CardTitle>
+            <CardDescription>
+              Download printable summaries or spreadsheets for trip planning and reporting.
+            </CardDescription>
+          </div>
+          <p className="text-sm text-slate-500 lg:text-right">
+            Choose what to export, then download a fresh snapshot at any time.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1 min-w-[160px]">
+              <Label htmlFor="export-resource">Dataset</Label>
+              <Select
+                id="export-resource"
+                value={exportResource}
+                onChange={(event) => setExportResource(event.target.value)}
+                aria-label="Select dataset to export"
+              >
+                {exportResourceOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="flex-1 min-w-[120px]">
+              <Label htmlFor="export-format">Format</Label>
+              <Select
+                id="export-format"
+                value={exportFormat}
+                onChange={(event) => setExportFormat(event.target.value)}
+                aria-label="Select export file format"
+              >
+                {exportFormatOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <Button
+              type="button"
+              onClick={handleExport}
+              disabled={isExporting}
+              className="sm:w-auto"
+              aria-busy={isExporting}
+            >
+              {isExporting ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  Generating…
+                </span>
+              ) : (
+                'Download export'
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="md:col-span-4">

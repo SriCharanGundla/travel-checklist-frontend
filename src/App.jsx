@@ -20,6 +20,9 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
         <Toaster position="top-right" />
         <Routes>
           <Route path="/" element={<Home />} />
