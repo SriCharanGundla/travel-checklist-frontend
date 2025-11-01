@@ -10,6 +10,8 @@ import TripDetail from './pages/TripDetail'
 import CreateTrip from './pages/CreateTrip'
 import SharedTrip from './pages/SharedTrip'
 import Profile from './pages/Profile'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import ProtectedRoute from './components/common/ProtectedRoute'
 import DashboardLayout from './components/layout/DashboardLayout'
 
@@ -22,6 +24,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/shared/:token" element={<SharedTrip />} />
 
           <Route element={<ProtectedRoute />}>

@@ -27,10 +27,21 @@ export const getProfile = async () => {
   return response.data?.data
 }
 
+export const requestPasswordReset = async (payload) => {
+  await api.post('/v1/auth/password/forgot', payload)
+}
+
+export const resetPassword = async (payload) => {
+  const response = await api.post('/v1/auth/password/reset', payload)
+  return parseResponse(response)
+}
+
 export default {
   register,
   login,
   refresh,
   logout,
   getProfile,
+  requestPasswordReset,
+  resetPassword,
 }

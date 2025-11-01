@@ -3,15 +3,26 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { Loader2, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
+
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,64}$/
 
 const registerSchema = z
   .object({
-    firstName: z.string().min(1, 'First name is required'),
-    lastName: z.string().min(1, 'Last name is required'),
-    email: z.string().email('Enter a valid email address'),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
-    confirmPassword: z.string().min(8, 'Confirm your password'),
+    firstName: z.string().trim().min(1, 'First name is required'),
+    lastName: z.string().trim().min(1, 'Last name is required'),
+    email: z.string().trim().email('Enter a valid email address'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .max(64, 'Password must be at most 64 characters')
+      .regex(passwordRegex, 'Use upper & lower case letters, a number, and a symbol'),
+    confirmPassword: z.string(),
   })
   .refine((vals) => vals.password === vals.confirmPassword, {
     path: ['confirmPassword'],
@@ -40,11 +51,12 @@ const Register = () => {
   const onSubmit = async (values) => {
     try {
       await registerUser({
-        firstName: values.firstName,
-        lastName: values.lastName,
-        email: values.email,
+        firstName: values.firstName.trim(),
+        lastName: values.lastName.trim(),
+        email: values.email.trim(),
         password: values.password,
       })
+      toast.success('Account ready! You are signed in.')
       navigate('/dashboard', { replace: true })
     } catch (error) {
       const message = error.response?.data?.error?.message || 'Registration failed. Please try again.'
@@ -52,98 +64,92 @@ const Register = () => {
     }
   }
 
+  const renderError = (fieldError) =>
+    fieldError ? <p className="mt-1 text-xs font-medium text-rose-600">{fieldError.message}</p> : null
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-12">
-      <div className="w-full max-w-xl rounded-xl bg-white p-8 shadow-sm">
-        <div className="mb-6 text-center">
-          <h2 className="text-3xl font-semibold text-gray-900">Create your account</h2>
-          <p className="mt-2 text-sm text-gray-600">Collaborative travel planning starts here.</p>
-        </div>
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6 py-12">
+      <div className="w-full max-w-3xl">
+        <Card className="shadow-xl">
+          <CardHeader className="grid gap-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent sm:grid-cols-2">
+            <div>
+              <CardTitle className="text-2xl font-semibold text-slate-900">Create your travel workspace</CardTitle>
+              <CardDescription className="text-sm leading-relaxed">
+                Invite collaborators, organize itineraries, track essential documents, and stay ahead of every departure date.
+              </CardDescription>
+            </div>
+            <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-white/70 p-4 text-sm text-slate-600">
+              <ShieldCheck className="mt-1 h-5 w-5 text-primary" aria-hidden="true" />
+              <div>
+                <p className="font-semibold text-slate-700">Security-first foundation</p>
+                <p>Two-factor authentication and document vault encryption land in Phase 2. We start with strong passwords today.</p>
+              </div>
+            </div>
+          </CardHeader>
 
-        <form className="grid grid-cols-1 gap-6 sm:grid-cols-2" onSubmit={handleSubmit(onSubmit)} noValidate>
-          <div>
-            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-              First name
-            </label>
-            <input
-              id="firstName"
-              type="text"
-              className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-gray-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              {...register('firstName')}
-            />
-            {errors.firstName && <p className="mt-1 text-sm text-red-500">{errors.firstName.message}</p>}
-          </div>
+          <CardContent className="py-6">
+            <form className="grid grid-cols-1 gap-6 md:grid-cols-2" onSubmit={handleSubmit(onSubmit)} noValidate>
+              <div className="space-y-2">
+                <Label htmlFor="firstName" required>
+                  First name
+                </Label>
+                <Input id="firstName" autoComplete="given-name" {...register('firstName')} />
+                {renderError(errors.firstName)}
+              </div>
 
-          <div>
-            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-              Last name
-            </label>
-            <input
-              id="lastName"
-              type="text"
-              className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-gray-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              {...register('lastName')}
-            />
-            {errors.lastName && <p className="mt-1 text-sm text-red-500">{errors.lastName.message}</p>}
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName" required>
+                  Last name
+                </Label>
+                <Input id="lastName" autoComplete="family-name" {...register('lastName')} />
+                {renderError(errors.lastName)}
+              </div>
 
-          <div className="sm:col-span-2">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email address
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-gray-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              {...register('email')}
-            />
-            {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>}
-          </div>
+              <div className="md:col-span-2 space-y-2">
+                <Label htmlFor="email" required>
+                  Email address
+                </Label>
+                <Input id="email" type="email" autoComplete="email" placeholder="you@example.com" {...register('email')} />
+                {renderError(errors.email)}
+              </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="new-password"
-              className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-gray-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              {...register('password')}
-            />
-            {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password.message}</p>}
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="password" required>
+                  Password
+                </Label>
+                <Input id="password" type="password" autoComplete="new-password" {...register('password')} />
+                {renderError(errors.password)}
+              </div>
 
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-              Confirm password
-            </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              autoComplete="new-password"
-              className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-gray-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              {...register('confirmPassword')}
-            />
-            {errors.confirmPassword && <p className="mt-1 text-sm text-red-500">{errors.confirmPassword.message}</p>}
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" required>
+                  Confirm password
+                </Label>
+                <Input id="confirmPassword" type="password" autoComplete="new-password" {...register('confirmPassword')} />
+                {renderError(errors.confirmPassword)}
+              </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting || loading}
-            className="sm:col-span-2 flex w-full items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-primary/60"
-          >
-            {isSubmitting || loading ? 'Creating account...' : 'Create Account'}
-          </button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-gray-600">
-          Already have an account?{' '}
-          <Link to="/login" className="font-medium text-primary hover:text-primary/80">
-            Sign in
-          </Link>
-        </p>
+              <div className="md:col-span-2 space-y-4">
+                <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting || loading}>
+                  {isSubmitting || loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                      Creating account…
+                    </>
+                  ) : (
+                    'Create account'
+                  )}
+                </Button>
+                <p className="text-sm text-slate-600">
+                  Already have an account?{' '}
+                  <Link to="/login" className="font-semibold text-primary hover:text-primary/80">
+                    Sign in
+                  </Link>
+                </p>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

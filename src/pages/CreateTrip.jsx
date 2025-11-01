@@ -3,24 +3,70 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { Loader2, MapPin, PiggyBank } from 'lucide-react'
 import { createTrip } from '../services/tripService'
+import { Button } from '../components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
+import { Textarea } from '../components/ui/textarea'
+import { Select } from '../components/ui/select'
 
-const tripSchema = z.object({
-  name: z.string().min(1, 'Trip name is required'),
-  destination: z.string().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  status: z.enum(['planning', 'confirmed', 'ongoing', 'completed', 'cancelled']).default('planning'),
-  type: z.enum(['leisure', 'business', 'adventure', 'family']).default('leisure'),
-  budgetCurrency: z.string().length(3, 'Currency code must be 3 letters').default('USD'),
-  budgetAmount: z
-    .string()
-    .optional()
-    .transform((value) => (value ? Number.parseFloat(value) : 0))
-    .refine((value) => !Number.isNaN(value) && value >= 0, { message: 'Budget must be a positive number' }),
-  description: z.string().optional(),
-  notes: z.string().optional(),
-})
+const statusOptions = [
+  { value: 'planning', label: 'Planning' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'ongoing', label: 'In Progress' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' },
+]
+
+const typeOptions = [
+  { value: 'leisure', label: 'Leisure' },
+  { value: 'business', label: 'Business' },
+  { value: 'adventure', label: 'Adventure' },
+  { value: 'family', label: 'Family' },
+]
+
+const tripSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Trip name is required'),
+    destination: z
+      .string()
+      .optional()
+      .transform((value) => (value ? value.trim() : '')),
+    startDate: z.string().optional(),
+    endDate: z.string().optional(),
+    status: z.enum(statusOptions.map((option) => option.value)),
+    type: z.enum(typeOptions.map((option) => option.value)),
+    budgetCurrency: z
+      .string()
+      .trim()
+      .length(3, 'Currency code must be 3 letters')
+      .transform((value) => value.toUpperCase()),
+    budgetAmount: z
+      .union([z.string(), z.number()])
+      .transform((value) => {
+        if (typeof value === 'number') return value
+        if (value === undefined || value === '') return 0
+        return Number.parseFloat(value)
+      })
+      .refine((value) => !Number.isNaN(value) && value >= 0, { message: 'Budget must be zero or greater' }),
+    description: z
+      .string()
+      .optional()
+      .transform((value) => (value ? value.trim() : '')),
+    notes: z
+      .string()
+      .optional()
+      .transform((value) => (value ? value.trim() : '')),
+  })
+  .refine(
+    (data) => {
+      if (!data.startDate || !data.endDate) return true
+      return new Date(data.startDate) <= new Date(data.endDate)
+    },
+    { path: ['endDate'], message: 'End date must be on or after start date' },
+  )
 
 const CreateTrip = () => {
   const navigate = useNavigate()
@@ -39,7 +85,7 @@ const CreateTrip = () => {
       status: 'planning',
       type: 'leisure',
       budgetCurrency: 'USD',
-      budgetAmount: 0,
+      budgetAmount: '',
       description: '',
       notes: '',
     },
@@ -48,14 +94,18 @@ const CreateTrip = () => {
   const onSubmit = async (values) => {
     try {
       await createTrip({
-        ...values,
-        budgetAmount: values.budgetAmount ?? 0,
-        destination: values.destination || null,
-        description: values.description || null,
-        notes: values.notes || null,
+        name: values.name.trim(),
+        destination: values.destination ? values.destination : null,
         startDate: values.startDate || null,
         endDate: values.endDate || null,
+        status: values.status,
+        type: values.type,
+        budgetCurrency: values.budgetCurrency,
+        budgetAmount: values.budgetAmount ?? 0,
+        description: values.description ? values.description : null,
+        notes: values.notes ? values.notes : null,
       })
+
       toast.success('Trip created successfully')
       navigate('/trips', { replace: true })
     } catch (error) {
@@ -64,174 +114,139 @@ const CreateTrip = () => {
     }
   }
 
+  const renderError = (fieldError) =>
+    fieldError ? <p className="mt-1 text-xs font-medium text-rose-600">{fieldError.message}</p> : null
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Create a New Trip</h1>
-        <p className="text-sm text-gray-600">Add details about your upcoming travel to unlock collaborative planning tools.</p>
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold text-slate-900">Create a New Trip</h1>
+        <p className="text-sm text-slate-500">
+          Capture the essentials now and invite travelers later. You can always refine the details as plans evolve.
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="rounded-xl bg-white p-6 shadow-sm" noValidate>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="md:col-span-2">
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-              Trip name
-            </label>
-            <input
-              id="name"
-              type="text"
-              className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-gray-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              {...register('name')}
-            />
-            {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name.message}</p>}
-          </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Trip overview</CardTitle>
+          <CardDescription>Set the high-level details that will appear across checklists and timelines.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8" noValidate>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="md:col-span-2 space-y-2">
+                <Label htmlFor="name" required>
+                  Trip name
+                </Label>
+                <Input id="name" placeholder="Summer in Lisbon" autoFocus {...register('name')} />
+                {renderError(errors.name)}
+              </div>
 
-          <div>
-            <label htmlFor="destination" className="block text-sm font-medium text-gray-700">
-              Destination
-            </label>
-            <input
-              id="destination"
-              type="text"
-              className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-gray-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              {...register('destination')}
-            />
-            {errors.destination && <p className="mt-1 text-sm text-red-500">{errors.destination.message}</p>}
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="destination">
+                  Primary destination
+                </Label>
+                <div className="relative">
+                  <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input id="destination" className="pl-9" placeholder="City or region" {...register('destination')} />
+                </div>
+                {renderError(errors.destination)}
+              </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
-                Start date
-              </label>
-              <input
-                id="startDate"
-                type="date"
-                className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-gray-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                {...register('startDate')}
-              />
-              {errors.startDate && <p className="mt-1 text-sm text-red-500">{errors.startDate.message}</p>}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="startDate">Start date</Label>
+                  <Input id="startDate" type="date" {...register('startDate')} />
+                  {renderError(errors.startDate)}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="endDate">End date</Label>
+                  <Input id="endDate" type="date" {...register('endDate')} />
+                  {renderError(errors.endDate)}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status">Trip status</Label>
+                <Select id="status" {...register('status')}>
+                  {statusOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="type">Trip type</Label>
+                <Select id="type" {...register('type')}>
+                  {typeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="budgetCurrency">Budget currency</Label>
+                <Input id="budgetCurrency" className="uppercase" maxLength={3} {...register('budgetCurrency')} />
+                {renderError(errors.budgetCurrency)}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="budgetAmount">
+                  Budget amount
+                  <span className="ml-2 inline-flex items-center gap-1 text-xs font-medium text-slate-500">
+                    <PiggyBank className="h-3.5 w-3.5" aria-hidden="true" />
+                    Optional
+                  </span>
+                </Label>
+                <Input id="budgetAmount" type="number" step="0.01" min="0" placeholder="0.00" {...register('budgetAmount')} />
+                {renderError(errors.budgetAmount)}
+              </div>
+
+              <div className="md:col-span-2 space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  rows={4}
+                  placeholder="What is this trip about? Who's going? What are your goals?"
+                  {...register('description')}
+                />
+                {renderError(errors.description)}
+              </div>
+
+              <div className="md:col-span-2 space-y-2">
+                <Label htmlFor="notes">Internal notes</Label>
+                <Textarea
+                  id="notes"
+                  rows={3}
+                  placeholder="Log reminders, visa requirements, or planning to-dos."
+                  {...register('notes')}
+                />
+                {renderError(errors.notes)}
+              </div>
             </div>
 
-            <div>
-              <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
-                End date
-              </label>
-              <input
-                id="endDate"
-                type="date"
-                className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-gray-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                {...register('endDate')}
-              />
-              {errors.endDate && <p className="mt-1 text-sm text-red-500">{errors.endDate.message}</p>}
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <Button type="button" variant="ghost" onClick={() => navigate(-1)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    Saving…
+                  </>
+                ) : (
+                  'Create trip'
+                )}
+              </Button>
             </div>
-          </div>
-
-          <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-              Status
-            </label>
-            <select
-              id="status"
-              className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-gray-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              {...register('status')}
-            >
-              <option value="planning">Planning</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="ongoing">Ongoing</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="type" className="block text-sm font-medium text-gray-700">
-              Trip type
-            </label>
-            <select
-              id="type"
-              className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-gray-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              {...register('type')}
-            >
-              <option value="leisure">Leisure</option>
-              <option value="business">Business</option>
-              <option value="adventure">Adventure</option>
-              <option value="family">Family</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="budgetCurrency" className="block text-sm font-medium text-gray-700">
-              Budget currency
-            </label>
-            <input
-              id="budgetCurrency"
-              type="text"
-              className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 uppercase text-gray-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              {...register('budgetCurrency')}
-            />
-            {errors.budgetCurrency && <p className="mt-1 text-sm text-red-500">{errors.budgetCurrency.message}</p>}
-          </div>
-
-          <div>
-            <label htmlFor="budgetAmount" className="block text-sm font-medium text-gray-700">
-              Budget amount
-            </label>
-            <input
-              id="budgetAmount"
-              type="number"
-              min="0"
-              step="0.01"
-              className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-gray-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              {...register('budgetAmount')}
-            />
-            {errors.budgetAmount && <p className="mt-1 text-sm text-red-500">{errors.budgetAmount.message}</p>}
-          </div>
-
-          <div className="md:col-span-2">
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-              Description
-            </label>
-            <textarea
-              id="description"
-              rows={3}
-              className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-gray-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              {...register('description')}
-            />
-            {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description.message}</p>}
-          </div>
-
-          <div className="md:col-span-2">
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-              Notes
-            </label>
-            <textarea
-              id="notes"
-              rows={3}
-              className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-gray-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              {...register('notes')}
-            />
-            {errors.notes && <p className="mt-1 text-sm text-red-500">{errors.notes.message}</p>}
-          </div>
-        </div>
-
-        <div className="mt-8 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-primary/60"
-          >
-            {isSubmitting ? 'Saving...' : 'Create Trip'}
-          </button>
-        </div>
-      </form>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }

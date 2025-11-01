@@ -1,4 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Loader2 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
 const ProtectedRoute = () => {
@@ -7,8 +8,9 @@ const ProtectedRoute = () => {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <div className="text-lg font-medium text-gray-600">Loading...</div>
+      <div className="flex h-screen flex-col items-center justify-center gap-3 bg-slate-50">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
+        <p className="text-sm font-medium text-slate-600">Preparing your travel dashboard…</p>
       </div>
     )
   }

@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 import toast from 'react-hot-toast'
 import authService from '../services/authService'
 
-const AuthContext = createContext(null)
+export const AuthContext = createContext(null)
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)

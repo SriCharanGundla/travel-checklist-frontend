@@ -1,11 +1,15 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useAuth } from '../../contexts/AuthContext'
+import { Button, buttonVariants } from '../ui/button'
+import { cn } from '../../lib/utils'
 
 const navLinkClasses = ({ isActive }) =>
-  `rounded-lg px-3 py-2 text-sm font-semibold transition ${
-    isActive ? 'bg-primary text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'
-  }`
+  cn(
+    buttonVariants({ variant: isActive ? 'default' : 'ghost', size: 'sm' }),
+    'font-semibold',
+    isActive ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:text-slate-900',
+  )
 
 const DashboardLayout = () => {
   const { user, logout } = useAuth()
@@ -18,11 +22,11 @@ const DashboardLayout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="border-b border-gray-200 bg-white">
+    <div className="min-h-screen bg-slate-100">
+      <header className="border-b border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-6">
-            <NavLink to="/dashboard" className="text-lg font-semibold text-gray-900">
+            <NavLink to="/dashboard" className="text-lg font-semibold text-slate-900">
               Travel Checklist
             </NavLink>
             <nav className="hidden items-center gap-2 sm:flex">
@@ -41,16 +45,12 @@ const DashboardLayout = () => {
             </nav>
           </div>
           <div className="flex items-center gap-3">
-            <span className="hidden text-sm font-medium text-gray-600 sm:inline">
+            <span className="hidden text-sm font-medium text-slate-600 sm:inline">
               {user?.firstName ? `Hi, ${user.firstName}` : user?.email}
             </span>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-            >
+            <Button variant="secondary" size="sm" onClick={handleLogout}>
               Sign Out
-            </button>
+            </Button>
           </div>
         </div>
       </header>
