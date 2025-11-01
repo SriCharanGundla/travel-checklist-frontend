@@ -9,6 +9,7 @@ import TripList from './pages/TripList'
 import TripDetail from './pages/TripDetail'
 import CreateTrip from './pages/CreateTrip'
 import SharedTrip from './pages/SharedTrip'
+import AcceptInvite from './pages/AcceptInvite'
 import Profile from './pages/Profile'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
@@ -26,6 +27,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/accept-invite" element={<AcceptInvite />} />
           <Route path="/shared/:token" element={<SharedTrip />} />
 
           <Route element={<ProtectedRoute />}>

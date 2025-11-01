@@ -9,11 +9,17 @@ import { Skeleton } from '../components/ui/skeleton'
 import { TravelersPanel } from '../components/trips/TravelersPanel'
 import { ChecklistPanel } from '../components/trips/ChecklistPanel'
 import { DocumentsPanel } from '../components/trips/DocumentsPanel'
+import { CollaboratorsPanel } from '../components/trips/CollaboratorsPanel'
+import { ItineraryPanel } from '../components/trips/ItineraryPanel'
+import { ExpensesPanel } from '../components/trips/ExpensesPanel'
 import { getTripById, deleteTrip } from '../services/tripService'
 import { formatDateRange, formatDate } from '../utils/dateUtils'
 import { useTravelersStore } from '../stores/travelersStore'
 import { useChecklistStore } from '../stores/checklistStore'
 import { useDocumentsStore } from '../stores/documentsStore'
+import { useCollaborationStore } from '../stores/collaborationStore'
+import { useItineraryStore } from '../stores/itineraryStore'
+import { useExpensesStore } from '../stores/expensesStore'
 import { shallow } from 'zustand/shallow'
 
 const overviewFields = [
@@ -96,6 +102,79 @@ const TripDetail = () => {
     shallow
   )
 
+  const {
+    collaborators,
+    collaboratorsMeta,
+    collaboratorsLoading,
+    shareLinks,
+    shareLinksMeta,
+    shareLinksLoading,
+    fetchCollaborators,
+    inviteCollaborator,
+    resendInvitation,
+    updateCollaboratorPermission,
+    removeCollaborator,
+    fetchShareLinks,
+    createShareLink,
+    revokeShareLink,
+  } = useCollaborationStore(
+    (state) => ({
+      collaborators: state.collaborators,
+      collaboratorsMeta: state.collaboratorsMeta,
+      collaboratorsLoading: state.collaboratorsLoading,
+      shareLinks: state.shareLinks,
+      shareLinksMeta: state.shareLinksMeta,
+      shareLinksLoading: state.shareLinksLoading,
+      fetchCollaborators: state.fetchCollaborators,
+      inviteCollaborator: state.inviteCollaborator,
+      resendInvitation: state.resendInvitation,
+      updateCollaboratorPermission: state.updateCollaboratorPermission,
+      removeCollaborator: state.removeCollaborator,
+      fetchShareLinks: state.fetchShareLinks,
+      createShareLink: state.createShareLink,
+      revokeShareLink: state.revokeShareLink,
+    }),
+    shallow
+  )
+
+  const {
+    items: itineraryItems,
+    isLoading: itineraryLoading,
+    fetchItems,
+    addItem,
+    updateItem,
+    removeItem,
+  } = useItineraryStore(
+    (state) => ({
+      items: state.items,
+      isLoading: state.isLoading,
+      fetchItems: state.fetchItems,
+      addItem: state.addItem,
+      updateItem: state.updateItem,
+      removeItem: state.removeItem,
+    }),
+    shallow
+  )
+
+  const {
+    expenses,
+    isLoading: expensesLoading,
+    fetchExpenses,
+    addExpense,
+    updateExpense,
+    removeExpense,
+  } = useExpensesStore(
+    (state) => ({
+      expenses: state.expenses,
+      isLoading: state.isLoading,
+      fetchExpenses: state.fetchExpenses,
+      addExpense: state.addExpense,
+      updateExpense: state.updateExpense,
+      removeExpense: state.removeExpense,
+    }),
+    shallow
+  )
+
   useEffect(() => {
     let isActive = true
 
@@ -128,6 +207,12 @@ const TripDetail = () => {
         fetchDocuments(tripId).catch(() =>
           toast.error('Unable to load documents. Refresh to try again.')
         ),
+        fetchItems(tripId).catch(() =>
+          toast.error('Unable to load itinerary. Refresh to try again.')
+        ),
+        fetchExpenses(tripId).catch(() =>
+          toast.error('Unable to load expenses. Refresh to try again.')
+        ),
       ]
       await Promise.all(loaders)
     }
@@ -138,7 +223,39 @@ const TripDetail = () => {
     return () => {
       isActive = false
     }
-  }, [tripId, navigate, fetchTravelers, fetchBoard, fetchDocuments])
+  }, [
+    tripId,
+    navigate,
+    fetchTravelers,
+    fetchBoard,
+    fetchDocuments,
+    fetchItems,
+    fetchExpenses,
+  ])
+
+  useEffect(() => {
+    if (!tripId || !trip?.permission) {
+      return
+    }
+
+    if (trip.permission.level !== 'admin' && trip.permission.level !== 'edit') {
+      return
+    }
+
+    fetchCollaborators(tripId, { page: 1 }).catch(() =>
+      toast.error('Unable to load collaborators right now.')
+    )
+  }, [tripId, trip?.permission, fetchCollaborators])
+
+  useEffect(() => {
+    if (!tripId || !trip?.permission || trip.permission.level !== 'admin') {
+      return
+    }
+
+    fetchShareLinks(tripId, { page: 1 }).catch(() =>
+      toast.error('Unable to load share links right now.')
+    )
+  }, [tripId, trip?.permission, fetchShareLinks])
 
   const handleDeleteTrip = async () => {
     const confirmed = window.confirm('Delete this trip? This cannot be undone.')
@@ -273,6 +390,9 @@ const TripDetail = () => {
           <TabsTrigger value="travelers">Travelers</TabsTrigger>
           <TabsTrigger value="checklist">Checklist</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="collaborators">Collaborators</TabsTrigger>
+          <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
+          <TabsTrigger value="expenses">Expenses</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -378,6 +498,51 @@ const TripDetail = () => {
             onAdd={addDocument}
             onUpdate={updateDocument}
             onDelete={removeDocument}
+          />
+        </TabsContent>
+
+        <TabsContent value="collaborators">
+          <CollaboratorsPanel
+            tripId={tripId}
+            collaborators={collaborators}
+            collaboratorsMeta={collaboratorsMeta}
+            shareLinks={shareLinks}
+            shareLinksMeta={shareLinksMeta}
+            permission={trip.permission}
+            collaboratorsLoading={collaboratorsLoading}
+            shareLinksLoading={shareLinksLoading}
+            onInvite={inviteCollaborator}
+            onResend={resendInvitation}
+            onRemove={removeCollaborator}
+            onUpdatePermission={updateCollaboratorPermission}
+            onCreateShareLink={createShareLink}
+            onRevokeShareLink={revokeShareLink}
+            onFetchCollaborators={fetchCollaborators}
+            onFetchShareLinks={fetchShareLinks}
+          />
+        </TabsContent>
+
+        <TabsContent value="itinerary">
+          <ItineraryPanel
+            tripId={tripId}
+            items={itineraryItems}
+            isLoading={itineraryLoading}
+            permission={trip.permission}
+            onAdd={addItem}
+            onUpdate={updateItem}
+            onDelete={removeItem}
+          />
+        </TabsContent>
+
+        <TabsContent value="expenses">
+          <ExpensesPanel
+            tripId={tripId}
+            expenses={expenses}
+            isLoading={expensesLoading}
+            permission={trip.permission}
+            onAdd={addExpense}
+            onUpdate={updateExpense}
+            onDelete={removeExpense}
           />
         </TabsContent>
       </Tabs>

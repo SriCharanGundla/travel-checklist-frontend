@@ -1,8 +1,11 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import authService from '../services/authService'
+import collaboratorService from '../services/collaboratorService'
 
 export const AuthContext = createContext(null)
+
+const PENDING_INVITE_STORAGE_KEY = 'pendingInviteToken'
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
@@ -28,6 +31,54 @@ export const AuthProvider = ({ children }) => {
       clearSession()
     }
   }, [clearSession])
+
+  const processInviteToken = useCallback(
+    async (token, { silent = false } = {}) => {
+      if (!token) {
+        return null
+      }
+
+      try {
+        const collaborator = await collaboratorService.acceptInvitation(token)
+        localStorage.removeItem(PENDING_INVITE_STORAGE_KEY)
+
+        if (!silent) {
+          const tripName = collaborator?.trip?.name || 'the trip'
+          toast.success(`You now have access to ${tripName}!`)
+        }
+
+        return collaborator
+      } catch (error) {
+        if (!silent) {
+          const message = error.response?.data?.error?.message || 'Unable to accept invitation.'
+          toast.error(message)
+        }
+
+        if (error.response?.status && error.response.status !== 429) {
+          localStorage.removeItem(PENDING_INVITE_STORAGE_KEY)
+        }
+
+        throw error
+      }
+    },
+    []
+  )
+
+  const claimPendingInviteIfNeeded = useCallback(
+    async (currentUser = user) => {
+      const pendingToken = localStorage.getItem(PENDING_INVITE_STORAGE_KEY)
+      if (!pendingToken || !currentUser) {
+        return
+      }
+
+      try {
+        await processInviteToken(pendingToken)
+      } catch (error) {
+        console.error('Pending invite acceptance failed', error)
+      }
+    },
+    [processInviteToken, user]
+  )
 
   const loadProfile = useCallback(async () => {
     const storedToken = localStorage.getItem('accessToken')
@@ -62,6 +113,12 @@ export const AuthProvider = ({ children }) => {
     return () => window.removeEventListener('auth:logout', handleForcedLogout)
   }, [logout])
 
+  useEffect(() => {
+    if (!loading && user) {
+      claimPendingInviteIfNeeded(user)
+    }
+  }, [loading, user, claimPendingInviteIfNeeded])
+
   const login = useCallback(
     async (credentials) => {
       setLoading(true)
@@ -71,12 +128,13 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('refreshToken', tokens.refreshToken)
         setUser(userData)
         toast.success('Welcome back!')
+        claimPendingInviteIfNeeded(userData)
         return userData
       } finally {
         setLoading(false)
       }
     },
-    []
+    [claimPendingInviteIfNeeded]
   )
 
   const register = useCallback(
@@ -88,12 +146,13 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('refreshToken', tokens.refreshToken)
         setUser(userData)
         toast.success('Account created successfully!')
+        claimPendingInviteIfNeeded(userData)
         return userData
       } finally {
         setLoading(false)
       }
     },
-    []
+    [claimPendingInviteIfNeeded]
   )
 
   const value = useMemo(
@@ -104,8 +163,9 @@ export const AuthProvider = ({ children }) => {
       register,
       logout,
       setUser,
+      processInviteToken,
     }),
-    [user, loading, login, register, logout]
+    [user, loading, login, register, logout, processInviteToken]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

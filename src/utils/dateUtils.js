@@ -1,4 +1,4 @@
-import { format, parseISO, isValid } from 'date-fns'
+import { format, formatDistanceToNow, parseISO, isValid } from 'date-fns'
 
 export const formatDate = (value, fallback = 'TBD') => {
   if (!value) return fallback
@@ -27,8 +27,24 @@ export const isPastDate = (value) => {
   return parsed < new Date()
 }
 
+export const formatDateTime = (value, pattern = 'MMM d, yyyy • p') => {
+  if (!value) return 'N/A'
+  const parsed = typeof value === 'string' ? parseISO(value) : new Date(value)
+  if (!isValid(parsed)) return 'N/A'
+  return format(parsed, pattern)
+}
+
+export const formatRelativeDate = (value) => {
+  if (!value) return ''
+  const parsed = typeof value === 'string' ? parseISO(value) : new Date(value)
+  if (!isValid(parsed)) return ''
+  return formatDistanceToNow(parsed, { addSuffix: true })
+}
+
 export default {
   formatDate,
   formatDateRange,
   isPastDate,
+  formatDateTime,
+  formatRelativeDate,
 }

@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Loader2, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
@@ -31,6 +31,7 @@ const registerSchema = z
 
 const Register = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { register: registerUser, loading } = useAuth()
 
   const {
@@ -57,7 +58,11 @@ const Register = () => {
         password: values.password,
       })
       toast.success('Account ready! You are signed in.')
-      navigate('/dashboard', { replace: true })
+      const fromLocation = location.state?.from
+      const redirectTo = fromLocation
+        ? `${fromLocation.pathname}${fromLocation.search || ''}`
+        : '/dashboard'
+      navigate(redirectTo, { replace: true })
     } catch (error) {
       const message = error.response?.data?.error?.message || 'Registration failed. Please try again.'
       toast.error(message)

@@ -37,7 +37,10 @@ const Login = () => {
   const onSubmit = async (values) => {
     try {
       await login(values)
-      const redirectTo = location.state?.from?.pathname || '/dashboard'
+      const fromLocation = location.state?.from
+      const redirectTo = fromLocation
+        ? `${fromLocation.pathname}${fromLocation.search || ''}`
+        : '/dashboard'
       navigate(redirectTo, { replace: true })
     } catch (error) {
       const message = error.response?.data?.error?.message || 'Could not sign in. Check your credentials.'
