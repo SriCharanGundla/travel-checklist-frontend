@@ -1,0 +1,361 @@
+import { useEffect, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import toast from 'react-hot-toast'
+import { Button } from '../ui/button'
+import { Badge } from '../ui/badge'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
+import { Textarea } from '../ui/textarea'
+import { Select } from '../ui/select'
+import { Skeleton } from '../ui/skeleton'
+import { formatDate, isPastDate } from '../../utils/dateUtils'
+
+const DOCUMENT_TYPES = [
+  { value: 'passport', label: 'Passport' },
+  { value: 'visa', label: 'Visa' },
+  { value: 'insurance', label: 'Insurance' },
+  { value: 'vaccination', label: 'Vaccination' },
+  { value: 'license', label: 'License' },
+]
+
+const DOCUMENT_STATUS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'applied', label: 'Applied' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'valid', label: 'Valid' },
+  { value: 'expiring_soon', label: 'Expiring Soon' },
+  { value: 'expired', label: 'Expired' },
+]
+
+const statusBadgeStyles = {
+  pending: 'bg-slate-100 text-slate-700',
+  applied: 'bg-amber-100 text-amber-700',
+  approved: 'bg-emerald-100 text-emerald-700',
+  valid: 'bg-emerald-100 text-emerald-700',
+  expiring_soon: 'bg-orange-100 text-orange-700',
+  expired: 'bg-rose-100 text-rose-700',
+}
+
+const emptyForm = {
+  travelerId: '',
+  type: 'passport',
+  identifier: '',
+  issuingCountry: '',
+  issuedDate: '',
+  expiryDate: '',
+  status: 'pending',
+  fileUrl: '',
+  notes: '',
+}
+
+export const DocumentsPanel = ({
+  tripId,
+  documents,
+  travelers,
+  isLoading,
+  onAdd,
+  onUpdate,
+  onDelete,
+}) => {
+  const [isDialogOpen, setDialogOpen] = useState(false)
+  const [selectedDocument, setSelectedDocument] = useState(null)
+
+  const { register, handleSubmit, reset, watch, formState } = useForm({
+    defaultValues: emptyForm,
+  })
+
+  const selectedStatus = watch('status')
+
+  useEffect(() => {
+    if (selectedDocument) {
+      const {
+        traveler,
+        travelerId,
+        type,
+        identifier,
+        issuingCountry,
+        issuedDate,
+        expiryDate,
+        status,
+        fileUrl,
+        notes,
+      } = selectedDocument
+      reset({
+        travelerId: travelerId || traveler?.id || '',
+        type: type || 'passport',
+        identifier: identifier || '',
+        issuingCountry: issuingCountry || '',
+        issuedDate: issuedDate || '',
+        expiryDate: expiryDate || '',
+        status: status || 'pending',
+        fileUrl: fileUrl || '',
+        notes: notes || '',
+      })
+    } else {
+      reset({
+        ...emptyForm,
+        travelerId: travelers?.[0]?.id || '',
+      })
+    }
+  }, [selectedDocument, reset, travelers])
+
+  const closeDialog = () => {
+    setDialogOpen(false)
+    setSelectedDocument(null)
+  }
+
+  const handleCreate = () => {
+    setSelectedDocument(null)
+    setDialogOpen(true)
+  }
+
+  const handleEdit = (document) => {
+    setSelectedDocument(document)
+    setDialogOpen(true)
+  }
+
+  const handleRemove = async (document) => {
+    const confirmed = window.confirm(`Remove ${document.type} for ${document.traveler?.fullName}?`)
+    if (!confirmed) return
+    try {
+      await onDelete(tripId, document.id)
+      toast.success('Document removed')
+    } catch (error) {
+      const message =
+        error.response?.data?.error?.message || 'Unable to remove document. Please try again.'
+      toast.error(message)
+    }
+  }
+
+  const onSubmit = async (values) => {
+    const payload = {
+      ...values,
+      issuingCountry: values.issuingCountry?.toUpperCase() || null,
+    }
+
+    try {
+      if (selectedDocument) {
+        await onUpdate(tripId, selectedDocument.id, payload)
+        toast.success('Document updated')
+      } else {
+        await onAdd(tripId, payload.travelerId, payload)
+        toast.success('Document added')
+      }
+      closeDialog()
+    } catch (error) {
+      const message =
+        error.response?.data?.error?.message || 'Unable to save document. Please try again.'
+      toast.error(message)
+    }
+  }
+
+  const renderExpiryBadge = (document) => {
+    if (!document.expiryDate) {
+      return <Badge variant="outline">N/A</Badge>
+    }
+
+    const statusClass =
+      statusBadgeStyles[document.status] ||
+      (isPastDate(document.expiryDate)
+        ? statusBadgeStyles.expired
+        : statusBadgeStyles.valid)
+
+    return <Badge className={statusClass}>{formatDate(document.expiryDate)}</Badge>
+  }
+
+  return (
+    <section className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">Documents</h2>
+          <p className="text-sm text-slate-500">
+            Track passports, visas, insurance, and other critical paperwork.
+          </p>
+        </div>
+        <Button onClick={handleCreate} disabled={!travelers?.length}>
+          Add Document
+        </Button>
+      </div>
+
+      {!travelers?.length && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800">
+          Add at least one traveler to begin tracking documents.
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="space-y-3 rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+      ) : documents?.length ? (
+        <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Document</TableHead>
+                <TableHead>Traveler</TableHead>
+                <TableHead>Identifier</TableHead>
+                <TableHead>Issued</TableHead>
+                <TableHead>Expiry</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {documents.map((document) => (
+                <TableRow key={document.id}>
+                  <TableCell className="capitalize">{document.type}</TableCell>
+                  <TableCell>{document.traveler?.fullName || 'Unknown traveler'}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col text-sm text-slate-700">
+                      <span>{document.identifier || '—'}</span>
+                      {document.issuingCountry && (
+                        <span className="text-xs text-slate-400">{document.issuingCountry}</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>{formatDate(document.issuedDate)}</TableCell>
+                  <TableCell>{renderExpiryBadge(document)}</TableCell>
+                  <TableCell>
+                    <Badge className={statusBadgeStyles[document.status] || 'bg-slate-100 text-slate-600'}>
+                      {document.status.replace('_', ' ')}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(document)}>
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-rose-200 text-rose-600 hover:bg-rose-50"
+                        onClick={() => handleRemove(document)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center">
+          <p className="text-base font-medium text-slate-700">No documents tracked yet</p>
+          <p className="text-sm text-slate-500 max-w-md">
+            Add passports, visas, and insurance policies to get expiry reminders and quick access
+            during travel.
+          </p>
+          <Button onClick={handleCreate} disabled={!travelers?.length}>
+            Add a document
+          </Button>
+        </div>
+      )}
+
+      <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedDocument ? 'Edit document' : 'Add document'}</DialogTitle>
+          </DialogHeader>
+
+          <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="travelerId">Traveler</Label>
+                <Select id="travelerId" {...register('travelerId')} required>
+                  {travelers.map((traveler) => (
+                    <option key={traveler.id} value={traveler.id}>
+                      {traveler.fullName}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="type">Type</Label>
+                <Select id="type" {...register('type')} required>
+                  {DOCUMENT_TYPES.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="identifier">Identifier</Label>
+                <Input id="identifier" placeholder="Document number" {...register('identifier')} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="issuingCountry">Issuing country</Label>
+                <Input
+                  id="issuingCountry"
+                  placeholder="USA"
+                  maxLength={2}
+                  {...register('issuingCountry')}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-2">
+                <Label htmlFor="issuedDate">Issued</Label>
+                <Input id="issuedDate" type="date" {...register('issuedDate')} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="expiryDate">Expiry</Label>
+                <Input id="expiryDate" type="date" {...register('expiryDate')} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="status">Status</Label>
+                <Select id="status" {...register('status')} required>
+                  {DOCUMENT_STATUS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="fileUrl">File URL</Label>
+                <Input id="fileUrl" placeholder="https://..." {...register('fileUrl')} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea id="notes" rows={3} placeholder="Where the document is stored..." {...register('notes')} />
+              </div>
+            </div>
+
+            {selectedStatus === 'expiring_soon' && (
+              <p className="text-sm text-amber-600">
+                Marked as expiring soon — consider renewing this document before it lapses.
+              </p>
+            )}
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={closeDialog}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={formState.isSubmitting || !travelers.length}>
+                {selectedDocument ? 'Save changes' : 'Add document'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </section>
+  )
+}
+
+export default DocumentsPanel
+
