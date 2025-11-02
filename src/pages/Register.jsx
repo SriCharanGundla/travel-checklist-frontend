@@ -11,7 +11,7 @@ import { SensitiveInput } from '../components/ui/sensitiveInput'
 import { Label } from '../components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,64}$/
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,64}$/
 
 const registerSchema = z
   .object({
@@ -22,7 +22,7 @@ const registerSchema = z
       .string()
       .min(8, 'Password must be at least 8 characters')
       .max(64, 'Password must be at most 64 characters')
-      .regex(passwordRegex, 'Use upper & lower case letters, a number, and a symbol'),
+      .regex(passwordRegex, 'Use upper & lower case letters and a number'),
     confirmPassword: z.string(),
   })
   .refine((vals) => vals.password === vals.confirmPassword, {

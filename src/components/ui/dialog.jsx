@@ -29,7 +29,7 @@ const DialogContent = forwardRef(({ className, children, ...props }, ref) => (
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed inset-x-0 top-1/2 z-50 mx-auto w-full max-w-lg -translate-y-1/2 rounded-xl border border-slate-200 bg-white p-6 shadow-xl duration-200 data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:zoom-in-90 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95 sm:max-w-xl',
+        'fixed inset-x-4 top-6 z-50 mx-auto w-auto max-w-lg translate-y-0 overflow-y-auto rounded-xl border border-slate-200 bg-white p-5 shadow-xl max-h-[calc(100vh-3rem)] duration-200 data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:zoom-in-90 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95 sm:inset-x-0 sm:top-1/2 sm:w-full sm:max-w-xl sm:-translate-y-1/2 sm:p-6 sm:max-h-[calc(100vh-4rem)]',
         className
       )}
       {...props}
@@ -87,4 +87,3 @@ export {
   DialogDescription,
   DialogClose,
 }
-

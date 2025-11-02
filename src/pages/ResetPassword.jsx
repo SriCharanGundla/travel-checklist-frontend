@@ -15,8 +15,8 @@ const passwordSchema = z
   .string()
   .min(8, 'Password must be at least 8 characters long')
   .max(64, 'Password must be fewer than 64 characters')
-  .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/, {
-    message: 'Password must include upper & lower case, a number, and a symbol',
+  .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, {
+    message: 'Password must include upper & lower case letters and a number',
   })
 
 const resetSchema = z
@@ -99,7 +99,7 @@ const ResetPassword = () => {
           <CardHeader className="space-y-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
             <CardTitle className="text-2xl font-semibold text-slate-900">Choose a new password</CardTitle>
             <CardDescription className="text-sm">
-              Use at least 8 characters, mixing uppercase, lowercase, numbers, and symbols for the best security.
+              Use at least 8 characters, mixing uppercase, lowercase, and numbers for the best security.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 py-6">
