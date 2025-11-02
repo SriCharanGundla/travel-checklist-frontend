@@ -7,6 +7,19 @@ export const AuthContext = createContext(null)
 
 const PENDING_INVITE_STORAGE_KEY = 'pendingInviteToken'
 
+const getBrowserTimezone = () => {
+  try {
+    const options = Intl.DateTimeFormat().resolvedOptions()
+    const timezone = options?.timeZone
+    if (typeof timezone === 'string' && timezone.trim().length > 0) {
+      return timezone
+    }
+  } catch (error) {
+    console.warn('Unable to determine browser timezone', error)
+  }
+  return null
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -123,7 +136,13 @@ export const AuthProvider = ({ children }) => {
     async (credentials) => {
       setLoading(true)
       try {
-        const { user: userData, tokens } = await authService.login(credentials)
+        const payload = { ...credentials }
+        const timezone = getBrowserTimezone()
+        if (timezone) {
+          payload.timezone = timezone
+        }
+
+        const { user: userData, tokens } = await authService.login(payload)
         localStorage.setItem('accessToken', tokens.accessToken)
         localStorage.setItem('refreshToken', tokens.refreshToken)
         setUser(userData)
@@ -141,7 +160,15 @@ export const AuthProvider = ({ children }) => {
     async (payload) => {
       setLoading(true)
       try {
-        const { user: userData, tokens } = await authService.register(payload)
+        const requestPayload = { ...payload }
+        if (!requestPayload.timezone) {
+          const inferredTimezone = getBrowserTimezone()
+          if (inferredTimezone) {
+            requestPayload.timezone = inferredTimezone
+          }
+        }
+
+        const { user: userData, tokens } = await authService.register(requestPayload)
         localStorage.setItem('accessToken', tokens.accessToken)
         localStorage.setItem('refreshToken', tokens.refreshToken)
         setUser(userData)

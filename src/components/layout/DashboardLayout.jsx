@@ -5,6 +5,7 @@ import { Menu, X } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { Button, buttonVariants } from '../ui/button'
 import { cn } from '../../lib/utils'
+import { maskEmail } from '../../utils/privacy'
 
 const navLinkClasses = ({ isActive }) =>
   cn(
@@ -75,7 +76,7 @@ const DashboardLayout = () => {
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm font-medium text-slate-600 sm:inline">
-              {user?.firstName ? `Hi, ${user.firstName}` : user?.email}
+              {user?.firstName ? `Hi, ${user.firstName}` : maskEmail(user?.email)}
             </span>
             <Button variant="secondary" size="sm" onClick={handleLogout}>
               Sign Out

@@ -6,10 +6,13 @@ import { Badge } from '../ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
 import { Input } from '../ui/input'
+import { SensitiveInput } from '../ui/sensitiveInput'
+import SensitiveValue from '../ui/sensitiveValue'
 import { Textarea } from '../ui/textarea'
 import { Label } from '../ui/label'
 import { Skeleton } from '../ui/skeleton'
 import { formatDate, isPastDate } from '../../utils/dateUtils'
+import { maskEmail } from '../../utils/privacy'
 
 const emptyForm = {
   fullName: '',
@@ -169,22 +172,26 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
                         </span>
                       )}
                       {traveler.email && (
-                        <span className="text-xs text-slate-500">{traveler.email}</span>
+                        <span className="text-xs text-slate-500">{maskEmail(traveler.email)}</span>
                       )}
                       {traveler.phone && (
-                        <span className="text-xs text-slate-500">{traveler.phone}</span>
+                        <SensitiveValue
+                          value={traveler.phone}
+                          className="text-xs text-slate-500"
+                          emptyPlaceholder="—"
+                        />
                       )}
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
                       {traveler.passportNumber ? (
-                        <p className="text-sm text-slate-700">
-                          {traveler.passportNumber}
+                        <div className="flex flex-col text-sm text-slate-700">
+                          <SensitiveValue value={traveler.passportNumber} />
                           {traveler.passportCountry && (
-                            <span className="text-slate-400"> · {traveler.passportCountry}</span>
+                            <span className="text-xs text-slate-400">{traveler.passportCountry}</span>
                           )}
-                        </p>
+                        </div>
                       ) : (
                         <p className="text-sm text-slate-400 italic">Not captured</p>
                       )}
@@ -196,9 +203,11 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
                       <div className="flex flex-col text-sm text-slate-700">
                         <span>{traveler.emergencyContactName}</span>
                         {traveler.emergencyContactPhone && (
-                          <span className="text-xs text-slate-500">
-                            {traveler.emergencyContactPhone}
-                          </span>
+                          <SensitiveValue
+                            value={traveler.emergencyContactPhone}
+                            className="text-xs text-slate-500"
+                            emptyPlaceholder="—"
+                          />
                         )}
                       </div>
                     ) : (
@@ -275,14 +284,24 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" placeholder="+1 555-123-4567" {...register('phone')} />
+                <SensitiveInput
+                  id="phone"
+                  placeholder="+1 555-123-4567"
+                  {...register('phone')}
+                  toggleLabel="Toggle traveler phone visibility"
+                />
               </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="grid gap-2 sm:col-span-2">
                 <Label htmlFor="passportNumber">Passport number</Label>
-                <Input id="passportNumber" placeholder="123456789" {...register('passportNumber')} />
+                <SensitiveInput
+                  id="passportNumber"
+                  placeholder="123456789"
+                  {...register('passportNumber')}
+                  toggleLabel="Toggle passport number visibility"
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="passportCountry">Country</Label>
@@ -304,7 +323,12 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="emergencyContactPhone">Emergency phone</Label>
-                <Input id="emergencyContactPhone" placeholder="+1 555-987-6543" {...register('emergencyContactPhone')} />
+                <SensitiveInput
+                  id="emergencyContactPhone"
+                  placeholder="+1 555-987-6543"
+                  {...register('emergencyContactPhone')}
+                  toggleLabel="Toggle emergency contact phone visibility"
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="notes">Notes</Label>

@@ -21,10 +21,15 @@ export const deleteDocument = async (documentId) => {
   await api.delete(`/v1/documents/${documentId}`)
 }
 
+export const requestVaultDownloadLink = async (documentId) => {
+  const response = await api.post(`/v1/documents/${documentId}/vault-link`)
+  return response.data?.data
+}
+
 export default {
   getTripDocuments,
   createDocument,
   updateDocument,
   deleteDocument,
+  requestVaultDownloadLink,
 }
-

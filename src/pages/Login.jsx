@@ -7,6 +7,7 @@ import { Loader2, Lock, Mail } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
+import { SensitiveInput } from '../components/ui/sensitiveInput'
 import { Label } from '../components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 
@@ -78,7 +79,7 @@ const Login = () => {
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
                   <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input
+                  <SensitiveInput
                     id="password"
                     type="password"
                     autoComplete="current-password"

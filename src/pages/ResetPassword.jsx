@@ -7,7 +7,7 @@ import toast from 'react-hot-toast'
 import { Lock } from 'lucide-react'
 import authService from '../services/authService'
 import { Button } from '../components/ui/button'
-import { Input } from '../components/ui/input'
+import { SensitiveInput } from '../components/ui/sensitiveInput'
 import { Label } from '../components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 
@@ -108,7 +108,7 @@ const ResetPassword = () => {
                 <Label htmlFor="password">New password</Label>
                 <div className="relative">
                   <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input
+                  <SensitiveInput
                     id="password"
                     type="password"
                     autoComplete="new-password"
@@ -125,7 +125,7 @@ const ResetPassword = () => {
                 <Label htmlFor="confirmPassword">Confirm password</Label>
                 <div className="relative">
                   <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input
+                  <SensitiveInput
                     id="confirmPassword"
                     type="password"
                     autoComplete="new-password"
@@ -157,4 +157,3 @@ const ResetPassword = () => {
 }
 
 export default ResetPassword
-

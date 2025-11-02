@@ -10,6 +10,7 @@ import { Select } from '../ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
 import { Skeleton } from '../ui/skeleton'
 import { formatDateTime, formatRelativeDate } from '../../utils/dateUtils'
+import { maskEmail } from '../../utils/privacy'
 
 const PERMISSION_LABELS = {
   view: 'View only',
@@ -152,7 +153,7 @@ export const CollaboratorsPanel = ({
     try {
       const result = await onResend(tripId, collaborator.id)
       if (result?.inviteToken) {
-        toast.success(`Invitation re-sent to ${collaborator.email}`)
+        toast.success(`Invitation re-sent to ${maskEmail(collaborator.email)}`)
         toast.custom(
           () => (
             <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-md">
@@ -180,7 +181,7 @@ export const CollaboratorsPanel = ({
   }
 
   const handleRemove = async (collaborator) => {
-    const confirmed = window.confirm(`Remove ${collaborator.email} from this trip?`)
+    const confirmed = window.confirm(`Remove ${maskEmail(collaborator.email)} from this trip?`)
     if (!confirmed) return
 
     try {
@@ -348,7 +349,7 @@ export const CollaboratorsPanel = ({
                     <TableRow key={collaborator.id}>
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="font-medium text-slate-900">{collaborator.email}</span>
+                          <span className="font-medium text-slate-900">{maskEmail(collaborator.email)}</span>
                           {collaborator.user?.firstName && (
                             <span className="text-xs text-slate-500">
                               {collaborator.user.firstName} {collaborator.user.lastName || ''}

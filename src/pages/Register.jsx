@@ -7,6 +7,7 @@ import { Loader2, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
+import { SensitiveInput } from '../components/ui/sensitiveInput'
 import { Label } from '../components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 
@@ -122,7 +123,12 @@ const Register = () => {
                 <Label htmlFor="password" required>
                   Password
                 </Label>
-                <Input id="password" type="password" autoComplete="new-password" {...register('password')} />
+                <SensitiveInput
+                  id="password"
+                  type="password"
+                  autoComplete="new-password"
+                  {...register('password')}
+                />
                 {renderError(errors.password)}
               </div>
 
@@ -130,7 +136,12 @@ const Register = () => {
                 <Label htmlFor="confirmPassword" required>
                   Confirm password
                 </Label>
-                <Input id="confirmPassword" type="password" autoComplete="new-password" {...register('confirmPassword')} />
+                <SensitiveInput
+                  id="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  {...register('confirmPassword')}
+                />
                 {renderError(errors.confirmPassword)}
               </div>
 

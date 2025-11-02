@@ -1,4 +1,5 @@
 import { useAuth } from '../contexts/AuthContext'
+import { maskEmail } from '../utils/privacy'
 
 const Profile = () => {
   const { user } = useAuth()
@@ -23,7 +24,7 @@ const Profile = () => {
         </div>
         <div className="rounded-xl bg-white p-5 shadow-sm">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Email</h2>
-          <p className="mt-2 text-base text-gray-900">{user.email}</p>
+          <p className="mt-2 text-base text-gray-900">{maskEmail(user.email)}</p>
         </div>
         <div className="rounded-xl bg-white p-5 shadow-sm">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Timezone</h2>
