@@ -648,6 +648,7 @@ const TripDetail = () => {
             expenses={expenses}
             isLoading={expensesLoading}
             permission={trip.permission}
+            currency={trip?.budgetCurrency}
             onAdd={addExpense}
             onUpdate={updateExpense}
             onDelete={removeExpense}

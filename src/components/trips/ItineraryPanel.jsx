@@ -10,6 +10,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Skeleton } from '../ui/skeleton'
 import { formatDate, formatDateTime } from '../../utils/dateUtils'
 
+const toIsoString = (value) => {
+  if (!value) return null
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) {
+    return null
+  }
+  return parsed.toISOString()
+}
+
 const typeLabels = {
   flight: 'Flight',
   accommodation: 'Accommodation',
@@ -38,7 +47,7 @@ export const ItineraryPanel = ({
   onUpdate,
   onDelete,
 }) => {
-  const [form, setForm] = useState(defaultItem)
+  const [form, setForm] = useState(() => ({ ...defaultItem }))
 
   const canEditItinerary = permission?.level === 'admin' || permission?.level === 'edit'
 
@@ -65,9 +74,15 @@ export const ItineraryPanel = ({
     }
 
     try {
-      await onAdd(tripId, form)
+      const payload = {
+        ...form,
+        startTime: toIsoString(form.startTime) || null,
+        endTime: toIsoString(form.endTime) || null,
+      }
+
+      await onAdd(tripId, payload)
       toast.success('Itinerary item added')
-      setForm(defaultItem)
+      setForm({ ...defaultItem })
     } catch (error) {
       const message = error.response?.data?.error?.message || 'Unable to add itinerary item.'
       toast.error(message)

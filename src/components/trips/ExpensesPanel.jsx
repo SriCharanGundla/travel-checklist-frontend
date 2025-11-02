@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
@@ -19,25 +19,35 @@ const categoryLabels = {
   other: 'Other',
 }
 
-const defaultExpense = {
+const baseExpense = {
   category: 'other',
   amount: '',
-  currency: 'USD',
   spentAt: '',
   merchant: '',
   notes: '',
 }
+
+const createDefaultExpense = (currency) => ({
+  ...baseExpense,
+  currency,
+})
 
 export const ExpensesPanel = ({
   tripId,
   expenses,
   isLoading,
   permission,
+  currency,
   onAdd,
   onUpdate,
   onDelete,
 }) => {
-  const [form, setForm] = useState(defaultExpense)
+  const baseCurrency = formatCurrencyCode(currency)
+  const [form, setForm] = useState(() => createDefaultExpense(baseCurrency))
+
+  useEffect(() => {
+    setForm((prev) => ({ ...prev, currency: baseCurrency }))
+  }, [baseCurrency])
 
   const canEditExpenses = permission?.level === 'admin' || permission?.level === 'edit'
 
@@ -55,7 +65,7 @@ export const ExpensesPanel = ({
 
   const totalAmount = useMemo(
     () => expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0),
-    [expenses]
+    [expenses],
   )
 
   const handleChange = (field) => (event) => {
@@ -73,10 +83,10 @@ export const ExpensesPanel = ({
       await onAdd(tripId, {
         ...form,
         amount: Number(form.amount),
-        maxUsages: undefined,
+        currency: baseCurrency,
       })
       toast.success('Expense added')
-      setForm(defaultExpense)
+      setForm(createDefaultExpense(baseCurrency))
     } catch (error) {
       const message = error.response?.data?.error?.message || 'Unable to add expense.'
       toast.error(message)
@@ -105,14 +115,14 @@ export const ExpensesPanel = ({
             <CardDescription>Track spending across categories.</CardDescription>
           </div>
           <Badge variant="outline" className="text-base">
-            Total: {formatCurrency(totalAmount, form.currency || 'USD')}
+            Total: {formatCurrency(totalAmount, baseCurrency)}
           </Badge>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-wrap gap-2">
             {Object.entries(totalsByCategory).map(([category, amount]) => (
               <Badge key={category} variant="secondary" className="capitalize">
-                {categoryLabels[category] || category}: {formatCurrency(amount, form.currency || 'USD')}
+                {categoryLabels[category] || category}: {formatCurrency(amount, baseCurrency)}
               </Badge>
             ))}
             {!expenses.length && (
@@ -158,12 +168,12 @@ export const ExpensesPanel = ({
                 </Label>
                 <Input
                   id="expense-currency"
-                  value={form.currency}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, currency: event.target.value.toUpperCase().slice(0, 3) }))
-                  }
-                  maxLength={3}
+                  value={baseCurrency}
+                  readOnly
+                  aria-readonly="true"
+                  className="bg-slate-50 text-slate-600"
                 />
+                <p className="mt-1 text-xs text-slate-400">Adjust the trip currency in trip settings.</p>
               </div>
               <div>
                 <Label htmlFor="expense-date" className="text-xs uppercase tracking-wide text-slate-500">
@@ -249,7 +259,7 @@ export const ExpensesPanel = ({
                       </div>
                     </TableCell>
                     <TableCell className="text-right font-semibold text-slate-900">
-                      {formatCurrency(expense.amount, expense.currency)}
+                      {formatCurrency(expense.amount, expense.currency || baseCurrency)}
                     </TableCell>
                     {canEditExpenses && (
                       <TableCell className="text-right">
@@ -276,11 +286,24 @@ export const ExpensesPanel = ({
   )
 }
 
+const formatCurrencyCode = (value) => {
+  const candidate = (value || 'USD').toString().trim().toUpperCase()
+  return /^[A-Z]{3}$/.test(candidate) ? candidate : 'USD'
+}
+
 const formatCurrency = (value, currency = 'USD') => {
   const numeric = Number(value || 0)
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-  }).format(numeric)
+  const code = formatCurrencyCode(currency)
+
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: code,
+      minimumFractionDigits: 2,
+    }).format(numeric)
+  } catch (error) {
+    return `${code} ${numeric.toFixed(2)}`
+  }
 }
+
+export default ExpensesPanel

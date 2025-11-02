@@ -18,6 +18,15 @@ const PERMISSION_LABELS = {
   admin: 'Admin',
 }
 
+const toIsoString = (value) => {
+  if (!value) return undefined
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) {
+    return undefined
+  }
+  return parsed.toISOString()
+}
+
 const statusBadgeClass = (status) => {
   switch (status) {
     case 'accepted':
@@ -143,6 +152,12 @@ export const CollaboratorsPanel = ({
       }
       setInviteEmail('')
       setInvitePermission('edit')
+
+      if (onFetchCollaborators) {
+        await onFetchCollaborators(tripId, { page: 1, limit: collaboratorLimit }).catch(() => {
+          toast.error('Unable to refresh collaborators list.')
+        })
+      }
     } catch (error) {
       const message = error.response?.data?.error?.message || 'Unable to send invitation.'
       toast.error(message)
@@ -199,7 +214,7 @@ export const CollaboratorsPanel = ({
       const payload = {
         label: shareLabel || undefined,
         accessLevel: shareAccessLevel,
-        expiresAt: shareExpiresAt || undefined,
+        expiresAt: toIsoString(shareExpiresAt),
         maxUsages: shareMaxUsages ? Number(shareMaxUsages) : undefined,
       }
       const result = await onCreateShareLink(tripId, payload)
@@ -217,6 +232,10 @@ export const CollaboratorsPanel = ({
           token,
           label: createdLink.label || 'Untitled link',
         })
+        setShareLabel('')
+        setShareAccessLevel('view')
+        setShareExpiresAt('')
+        setShareMaxUsages('')
       }
       setShareLabel('')
       setShareAccessLevel('view')
