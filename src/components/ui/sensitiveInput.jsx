@@ -12,6 +12,8 @@ const SensitiveInput = forwardRef(
       hiddenType = 'password',
       initiallyVisible = false,
       toggleLabel = 'Toggle visibility',
+      leadingIcon: LeadingIcon,
+      leadingIconClassName,
       ...props
     },
     ref,
@@ -27,10 +29,19 @@ const SensitiveInput = forwardRef(
 
     return (
       <div className="relative">
+        {LeadingIcon ? (
+          <LeadingIcon
+            className={cn(
+              'pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400',
+              leadingIconClassName,
+            )}
+            aria-hidden="true"
+          />
+        ) : null}
         <Input
           ref={ref}
           type={inputType}
-          className={cn('pr-11', className)}
+          className={cn('pr-11', LeadingIcon ? 'pl-9' : '', className)}
           data-sensitive-visible={visible ? 'true' : 'false'}
           {...props}
         />
