@@ -88,7 +88,9 @@ const Register = () => {
               <ShieldCheck className="mt-1 h-5 w-5 text-primary" aria-hidden="true" />
               <div>
                 <p className="font-semibold text-slate-700">Security-first foundation</p>
-                <p>Two-factor authentication and document vault encryption land in Phase 2. We start with strong passwords today.</p>
+                <p>
+                  Traveler details and attachments are encrypted before they leave your browser, and secure links expire automatically to keep vault files private.
+                </p>
               </div>
             </div>
           </CardHeader>
