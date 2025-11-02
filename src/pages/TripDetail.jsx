@@ -389,7 +389,7 @@ const TripDetail = () => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="flex-1 min-w-[160px]">
+            <div className="flex-1 min-w-40">
               <Label htmlFor="export-resource">Dataset</Label>
               <Select
                 id="export-resource"
@@ -493,15 +493,17 @@ const TripDetail = () => {
       </div>
 
       <Tabs defaultValue="overview">
-        <TabsList className="bg-slate-100">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="travelers">Travelers</TabsTrigger>
-          <TabsTrigger value="checklist">Checklist</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
-          <TabsTrigger value="collaborators">Collaborators</TabsTrigger>
-          <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
-          <TabsTrigger value="expenses">Expenses</TabsTrigger>
-        </TabsList>
+        <div className="-mx-4 overflow-x-auto pb-2 sm:mx-0">
+          <TabsList className="bg-slate-100 min-w-max sm:min-w-0">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="travelers">Travelers</TabsTrigger>
+            <TabsTrigger value="checklist">Checklist</TabsTrigger>
+            <TabsTrigger value="documents">Documents</TabsTrigger>
+            <TabsTrigger value="collaborators">Collaborators</TabsTrigger>
+            <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
+            <TabsTrigger value="expenses">Expenses</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="overview">
           <div className="grid gap-4 md:grid-cols-2">
