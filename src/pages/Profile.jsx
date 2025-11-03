@@ -1,12 +1,23 @@
+import { useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { maskEmail } from '../utils/privacy'
+import { TravelerDirectoryManager } from '../components/profile/TravelerDirectoryManager'
 
 const Profile = () => {
   const { user } = useAuth()
+  const location = useLocation()
+  const directoryRef = useRef(null)
 
   if (!user) {
     return null
   }
+
+  useEffect(() => {
+    if (location.hash === '#travelers' && directoryRef.current) {
+      directoryRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [location.hash])
 
   return (
     <div className="space-y-6">
@@ -34,6 +45,10 @@ const Profile = () => {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Role</h2>
           <p className="mt-2 text-base text-gray-900 capitalize">{user.role}</p>
         </div>
+      </div>
+
+      <div ref={directoryRef}>
+        <TravelerDirectoryManager />
       </div>
     </div>
   )

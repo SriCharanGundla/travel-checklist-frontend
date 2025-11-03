@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
 import { Input } from '../ui/input'
 import { SensitiveInput } from '../ui/sensitiveInput'
 import SensitiveValue from '../ui/sensitiveValue'
@@ -13,6 +14,8 @@ import { Label } from '../ui/label'
 import { Skeleton } from '../ui/skeleton'
 import { formatDate, isPastDate } from '../../utils/dateUtils'
 import { maskEmail } from '../../utils/privacy'
+import { useTravelerDirectoryStore } from '../../stores/travelerDirectoryStore'
+import { shallow } from 'zustand/shallow'
 
 const emptyForm = {
   fullName: '',
@@ -28,11 +31,43 @@ const emptyForm = {
   notes: '',
 }
 
+const mapTravelerToFormValues = (traveler) => ({
+  fullName: traveler?.fullName || '',
+  preferredName: traveler?.preferredName || '',
+  email: traveler?.email || '',
+  phone: traveler?.phone || '',
+  birthdate: traveler?.birthdate || '',
+  passportNumber: traveler?.passportNumber || '',
+  passportCountry: traveler?.passportCountry || '',
+  passportExpiry: traveler?.passportExpiry || '',
+  emergencyContactName: traveler?.emergencyContactName || '',
+  emergencyContactPhone: traveler?.emergencyContactPhone || '',
+  notes: traveler?.notes || '',
+})
+
 export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, onDelete }) => {
   const [isDialogOpen, setDialogOpen] = useState(false)
   const [selectedTraveler, setSelectedTraveler] = useState(null)
+  const [isDirectoryOpen, setDirectoryOpen] = useState(false)
+  const [directoryFilter, setDirectoryFilter] = useState('')
+  const navigate = useNavigate()
 
   const { register, handleSubmit, reset, formState } = useForm({ defaultValues: emptyForm })
+
+  const {
+    contacts,
+    isLoading: directoryLoading,
+    hasLoaded: directoryLoaded,
+    fetchContacts,
+  } = useTravelerDirectoryStore(
+    (state) => ({
+      contacts: state.contacts,
+      isLoading: state.isLoading,
+      hasLoaded: state.hasLoaded,
+      fetchContacts: state.fetchContacts,
+    }),
+    shallow
+  )
 
   const travelerCountLabel = useMemo(() => {
     if (!travelers?.length) return 'No travelers yet'
@@ -40,38 +75,42 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
     return `${travelers.length} travelers`
   }, [travelers])
 
+  const filteredContacts = useMemo(() => {
+    const term = directoryFilter.trim().toLowerCase()
+    if (!term) return contacts
+    return contacts.filter((contact) => {
+      const haystacks = [
+        contact.fullName,
+        contact.preferredName,
+        contact.email,
+        contact.phone,
+        contact.notes,
+      ]
+        .filter(Boolean)
+        .map((value) => value.toString().toLowerCase())
+      return haystacks.some((value) => value.includes(term))
+    })
+  }, [contacts, directoryFilter])
+
   useEffect(() => {
-    if (selectedTraveler) {
-      const {
-        fullName,
-        preferredName,
-        email,
-        phone,
-        birthdate,
-        passportNumber,
-        passportCountry,
-        passportExpiry,
-        emergencyContactName,
-        emergencyContactPhone,
-        notes,
-      } = selectedTraveler
-      reset({
-        fullName: fullName || '',
-        preferredName: preferredName || '',
-        email: email || '',
-        phone: phone || '',
-        birthdate: birthdate || '',
-        passportNumber: passportNumber || '',
-        passportCountry: passportCountry || '',
-        passportExpiry: passportExpiry || '',
-        emergencyContactName: emergencyContactName || '',
-        emergencyContactPhone: emergencyContactPhone || '',
-        notes: notes || '',
-      })
-    } else {
-      reset(emptyForm)
-    }
+    reset(mapTravelerToFormValues(selectedTraveler))
   }, [selectedTraveler, reset])
+
+  useEffect(() => {
+    if (!isDirectoryOpen) {
+      return
+    }
+
+    setDirectoryFilter('')
+
+    if (directoryLoaded || directoryLoading) {
+      return
+    }
+
+    fetchContacts().catch(() =>
+      toast.error('Unable to load traveler directory. Please try again.')
+    )
+  }, [isDirectoryOpen, directoryLoaded, directoryLoading, fetchContacts])
 
   const closeDialog = () => {
     setDialogOpen(false)
@@ -98,6 +137,46 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
     } catch (error) {
       const message =
         error.response?.data?.error?.message || 'Unable to remove traveler. Please try again.'
+      toast.error(message)
+    }
+  }
+
+  const handleOpenDirectory = () => {
+    setDirectoryOpen(true)
+  }
+
+  const handleCloseDirectory = () => {
+    setDirectoryOpen(false)
+  }
+
+  const handleManageDirectory = () => {
+    setDirectoryOpen(false)
+    navigate('/profile#travelers')
+  }
+
+  const handleAddSavedTraveler = async (contact) => {
+    const payload = {
+      fullName: contact.fullName,
+      preferredName: contact.preferredName,
+      email: contact.email,
+      phone: contact.phone,
+      birthdate: contact.birthdate,
+      passportNumber: contact.passportNumber,
+      passportCountry: contact.passportCountry,
+      passportExpiry: contact.passportExpiry,
+      emergencyContactName: contact.emergencyContactName,
+      emergencyContactPhone: contact.emergencyContactPhone,
+      notes: contact.notes,
+    }
+
+    try {
+      await onAdd(tripId, payload)
+      toast.success(`${contact.fullName} added to this trip`)
+      setDirectoryOpen(false)
+    } catch (error) {
+      const message =
+        error.response?.data?.error?.message ||
+        'Unable to add traveler from directory. Please try again.'
       toast.error(message)
     }
   }
@@ -139,7 +218,12 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
           <h2 className="text-lg font-semibold text-slate-900">Travelers</h2>
           <p className="text-sm text-slate-500">{travelerCountLabel}</p>
         </div>
-        <Button onClick={handleCreate}>Add Traveler</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleOpenDirectory}>
+            Browse saved travelers
+          </Button>
+          <Button onClick={handleCreate}>Add Traveler</Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -248,11 +332,28 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
             Invite fellow travelers, store emergency contacts, and keep passports organized in one
             place.
           </p>
-          <Button onClick={handleCreate}>Add first traveler</Button>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button onClick={handleCreate}>Add first traveler</Button>
+            <Button variant="outline" onClick={handleOpenDirectory}>
+              Browse saved travelers
+            </Button>
+            <Button variant="ghost" onClick={() => navigate('/profile#travelers')}>
+              Manage directory
+            </Button>
+          </div>
         </div>
       )}
 
-      <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog
+        open={isDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeDialog()
+          } else {
+            setDialogOpen(true)
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
@@ -345,6 +446,96 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isDirectoryOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            setDirectoryOpen(true)
+          } else {
+            handleCloseDirectory()
+          }
+        }}
+      >
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Browse saved travelers</DialogTitle>
+            <DialogDescription>
+              Pick someone from your directory to add them to this trip.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <Input
+                placeholder="Search saved travelers"
+                value={directoryFilter}
+                onChange={(event) => setDirectoryFilter(event.target.value)}
+                className="sm:max-w-xs"
+              />
+              <Button type="button" variant="ghost" onClick={handleManageDirectory}>
+                Manage directory
+              </Button>
+            </div>
+
+            {directoryLoading && !directoryLoaded ? (
+              <div className="space-y-2">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+              </div>
+            ) : contacts.length ? (
+              filteredContacts.length ? (
+                <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                  {filteredContacts.map((contact) => (
+                    <div
+                      key={contact.id}
+                      className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <p className="text-base font-semibold text-slate-900">{contact.fullName}</p>
+                        <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
+                          {contact.preferredName && <span>Prefers {contact.preferredName}</span>}
+                          {contact.email && <span>{maskEmail(contact.email)}</span>}
+                          {contact.phone && (
+                            <SensitiveValue
+                              value={contact.phone}
+                              className="text-xs text-slate-500"
+                              emptyPlaceholder="—"
+                            />
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" onClick={() => handleAddSavedTraveler(contact)}>
+                          Add to trip
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">
+                  No saved travelers match your search.
+                </p>
+              )
+            ) : (
+              <div className="space-y-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">
+                <p>Save travelers in your profile to use this picker.</p>
+                <Button type="button" size="sm" onClick={handleManageDirectory}>
+                  Go to profile
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex justify-end">
+            <Button type="button" variant="outline" onClick={handleCloseDirectory}>
+              Close
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </section>

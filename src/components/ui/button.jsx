@@ -7,7 +7,7 @@ const baseClasses =
 const variantClasses = {
   default: 'bg-primary text-white hover:bg-primary/90 focus-visible:ring-primary/40',
   secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-200 focus-visible:ring-slate-300',
-  outline: 'border border-slate-200 text-slate-900 hover:bg-slate-100 focus-visible:ring-slate-200',
+  outline: 'border border-slate-200 bg-white text-slate-900 hover:bg-slate-50 focus-visible:ring-slate-200',
   ghost: 'text-slate-700 hover:bg-slate-100 focus-visible:ring-slate-200',
   destructive: 'bg-rose-600 text-white hover:bg-rose-500 focus-visible:ring-rose-300',
 }

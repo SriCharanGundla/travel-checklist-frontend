@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
@@ -8,6 +10,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Skeleton } from '../components/ui/skeleton'
 import { Label } from '../components/ui/label'
 import { Select } from '../components/ui/select'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog'
+import { Input } from '../components/ui/input'
+import { Textarea } from '../components/ui/textarea'
 import { Loader2 } from 'lucide-react'
 import { TravelersPanel } from '../components/trips/TravelersPanel'
 import { ChecklistPanel } from '../components/trips/ChecklistPanel'
@@ -15,7 +20,7 @@ import { DocumentsPanel } from '../components/trips/DocumentsPanel'
 import { CollaboratorsPanel } from '../components/trips/CollaboratorsPanel'
 import { ItineraryPanel } from '../components/trips/ItineraryPanel'
 import { ExpensesPanel } from '../components/trips/ExpensesPanel'
-import { getTripById, deleteTrip, exportTripData } from '../services/tripService'
+import { getTripById, deleteTrip, exportTripData, updateTrip } from '../services/tripService'
 import { formatDateRange, formatDate } from '../utils/dateUtils'
 import { downloadBlob, extractFilename } from '../utils/download'
 import { useTravelersStore } from '../stores/travelersStore'
@@ -25,6 +30,7 @@ import { useCollaborationStore } from '../stores/collaborationStore'
 import { useItineraryStore } from '../stores/itineraryStore'
 import { useExpensesStore } from '../stores/expensesStore'
 import { shallow } from 'zustand/shallow'
+import { statusOptions, tripSchema, typeOptions } from '../utils/tripSchemas'
 
 const overviewFields = [
   { label: 'Destination', key: 'destination', fallback: 'Add destination' },
@@ -51,6 +57,43 @@ const exportFormatOptions = [
   { value: 'csv', label: 'CSV' },
 ]
 
+const emptyTripFormValues = {
+  name: '',
+  destination: '',
+  startDate: '',
+  endDate: '',
+  status: statusOptions[0].value,
+  type: typeOptions[0].value,
+  budgetCurrency: 'USD',
+  budgetAmount: '',
+  description: '',
+  notes: '',
+}
+
+const tripToFormValues = (data) => {
+  if (!data) {
+    return emptyTripFormValues
+  }
+
+  return {
+    name: data.name || '',
+    destination: data.destination || '',
+    startDate: data.startDate ? data.startDate.slice(0, 10) : '',
+    endDate: data.endDate ? data.endDate.slice(0, 10) : '',
+    status: statusOptions.some((option) => option.value === data.status)
+      ? data.status
+      : statusOptions[0].value,
+    type: typeOptions.some((option) => option.value === data.type) ? data.type : typeOptions[0].value,
+    budgetCurrency: data.budgetCurrency || 'USD',
+    budgetAmount:
+      data.budgetAmount === null || data.budgetAmount === undefined || data.budgetAmount === ''
+        ? ''
+        : String(data.budgetAmount),
+    description: data.description || '',
+    notes: data.notes || '',
+  }
+}
+
 const TripDetail = () => {
   const { tripId } = useParams()
   const navigate = useNavigate()
@@ -59,6 +102,17 @@ const TripDetail = () => {
   const [exportResource, setExportResource] = useState('trip')
   const [exportFormat, setExportFormat] = useState('pdf')
   const [isExporting, setIsExporting] = useState(false)
+  const [isEditDialogOpen, setEditDialogOpen] = useState(false)
+
+  const {
+    handleSubmit: handleTripUpdateSubmit,
+    register: registerTripForm,
+    reset: resetTripForm,
+    formState: { errors: tripFormErrors, isSubmitting: isUpdatingTrip },
+  } = useForm({
+    resolver: zodResolver(tripSchema),
+    defaultValues: emptyTripFormValues,
+  })
 
   const {
     travelers,
@@ -192,6 +246,12 @@ const TripDetail = () => {
     shallow
   )
 
+  useEffect(() => {
+    if (trip) {
+      resetTripForm(tripToFormValues(trip))
+    }
+  }, [trip, resetTripForm])
+
   const handleExport = async () => {
     if (!trip) return
 
@@ -313,6 +373,50 @@ const TripDetail = () => {
     }
   }
 
+  const handleOpenEdit = () => {
+    if (!trip) return
+    resetTripForm(tripToFormValues(trip))
+    setEditDialogOpen(true)
+  }
+
+  const handleCloseEdit = () => {
+    setEditDialogOpen(false)
+    if (trip) {
+      resetTripForm(tripToFormValues(trip))
+    } else {
+      resetTripForm(emptyTripFormValues)
+    }
+  }
+
+  const renderTripFormError = (fieldError) =>
+    fieldError ? <p className="mt-1 text-xs font-medium text-rose-600">{fieldError.message}</p> : null
+
+  const onSubmitTripUpdate = async (values) => {
+    try {
+      const payload = {
+        name: values.name.trim(),
+        destination: values.destination ? values.destination : null,
+        startDate: values.startDate || null,
+        endDate: values.endDate || null,
+        status: values.status,
+        type: values.type,
+        budgetCurrency: values.budgetCurrency,
+        budgetAmount: values.budgetAmount ?? 0,
+        description: values.description ? values.description : null,
+        notes: values.notes ? values.notes : null,
+      }
+
+      const updatedTrip = await updateTrip(tripId, payload)
+      setTrip(updatedTrip)
+      resetTripForm(tripToFormValues(updatedTrip))
+      setEditDialogOpen(false)
+      toast.success('Trip details updated')
+    } catch (error) {
+      const message = error.response?.data?.error?.message || 'Unable to update trip.'
+      toast.error(message)
+    }
+  }
+
   const checklistStats = useMemo(() => {
     const totalItems = categories.reduce(
       (count, category) => count + (category.items?.length || 0),
@@ -334,6 +438,8 @@ const TripDetail = () => {
     () => documents.filter((doc) => doc.status === 'expiring_soon' || doc.status === 'expired'),
     [documents]
   )
+
+  const canEditTripDetails = trip?.permission?.level === 'admin' || trip?.permission?.level === 'edit'
 
   if (isLoadingTrip) {
     return (
@@ -363,6 +469,9 @@ const TripDetail = () => {
           >
             Back to trips
           </Link>
+          {canEditTripDetails && (
+            <Button onClick={handleOpenEdit}>Edit trip</Button>
+          )}
           <Button
             variant="outline"
             className="border-rose-200 text-rose-600 hover:bg-rose-50"
@@ -638,25 +747,174 @@ const TripDetail = () => {
             items={itineraryItems}
             isLoading={itineraryLoading}
             permission={trip.permission}
+            tripStartDate={trip.startDate}
+            tripEndDate={trip.endDate}
             onAdd={addItem}
             onUpdate={updateItem}
             onDelete={removeItem}
           />
         </TabsContent>
 
-        <TabsContent value="expenses">
-          <ExpensesPanel
-            tripId={tripId}
-            expenses={expenses}
-            isLoading={expensesLoading}
-            permission={trip.permission}
-            currency={trip?.budgetCurrency}
-            onAdd={addExpense}
-            onUpdate={updateExpense}
-            onDelete={removeExpense}
-          />
-        </TabsContent>
-      </Tabs>
+      <TabsContent value="expenses">
+        <ExpensesPanel
+          tripId={tripId}
+          expenses={expenses}
+          isLoading={expensesLoading}
+          permission={trip.permission}
+          currency={trip?.budgetCurrency}
+          onAdd={addExpense}
+          onUpdate={updateExpense}
+          onDelete={removeExpense}
+        />
+      </TabsContent>
+    </Tabs>
+
+      {canEditTripDetails && (
+        <Dialog
+          open={isEditDialogOpen}
+          onOpenChange={(open) => {
+            if (open) {
+              handleOpenEdit()
+            } else {
+              handleCloseEdit()
+            }
+          }}
+        >
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit trip details</DialogTitle>
+              <DialogDescription>
+                Update the core trip information so everyone stays aligned.
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleTripUpdateSubmit(onSubmitTripUpdate)} className="space-y-6" noValidate>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div className="md:col-span-2 space-y-2">
+                  <Label htmlFor="edit-trip-name" required>
+                    Trip name
+                  </Label>
+                  <Input
+                    id="edit-trip-name"
+                    placeholder="Summer in Lisbon"
+                    {...registerTripForm('name')}
+                  />
+                  {renderTripFormError(tripFormErrors.name)}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-trip-destination">Primary destination</Label>
+                  <Input
+                    id="edit-trip-destination"
+                    placeholder="City or region"
+                    {...registerTripForm('destination')}
+                  />
+                  {renderTripFormError(tripFormErrors.destination)}
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:col-span-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-trip-start">Start date</Label>
+                    <Input id="edit-trip-start" type="date" {...registerTripForm('startDate')} />
+                    {renderTripFormError(tripFormErrors.startDate)}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-trip-end">End date</Label>
+                    <Input id="edit-trip-end" type="date" {...registerTripForm('endDate')} />
+                    {renderTripFormError(tripFormErrors.endDate)}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-trip-status">Trip status</Label>
+                  <Select id="edit-trip-status" {...registerTripForm('status')}>
+                    {statusOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </Select>
+                  {renderTripFormError(tripFormErrors.status)}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-trip-type">Trip type</Label>
+                  <Select id="edit-trip-type" {...registerTripForm('type')}>
+                    {typeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </Select>
+                  {renderTripFormError(tripFormErrors.type)}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-trip-currency">Budget currency</Label>
+                  <Input
+                    id="edit-trip-currency"
+                    className="uppercase"
+                    maxLength={3}
+                    {...registerTripForm('budgetCurrency')}
+                  />
+                  {renderTripFormError(tripFormErrors.budgetCurrency)}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-trip-budget">Budget amount</Label>
+                  <Input
+                    id="edit-trip-budget"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    {...registerTripForm('budgetAmount')}
+                  />
+                  {renderTripFormError(tripFormErrors.budgetAmount)}
+                </div>
+
+                <div className="md:col-span-2 space-y-2">
+                  <Label htmlFor="edit-trip-description">Description</Label>
+                  <Textarea
+                    id="edit-trip-description"
+                    rows={4}
+                    placeholder="What is this trip about?"
+                    {...registerTripForm('description')}
+                  />
+                  {renderTripFormError(tripFormErrors.description)}
+                </div>
+
+                <div className="md:col-span-2 space-y-2">
+                  <Label htmlFor="edit-trip-notes">Internal notes</Label>
+                  <Textarea
+                    id="edit-trip-notes"
+                    rows={3}
+                    placeholder="Log reminders, visa requirements, or planning to-dos."
+                    {...registerTripForm('notes')}
+                  />
+                  {renderTripFormError(tripFormErrors.notes)}
+                </div>
+              </div>
+
+              <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button type="button" variant="outline" onClick={handleCloseEdit}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isUpdatingTrip}>
+                  {isUpdatingTrip ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                      Saving…
+                    </span>
+                  ) : (
+                    'Save changes'
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

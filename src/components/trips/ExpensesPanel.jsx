@@ -32,6 +32,21 @@ const createDefaultExpense = (currency) => ({
   currency,
 })
 
+const toDate = (value) => {
+  if (!value) return null
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) {
+    return null
+  }
+  return parsed
+}
+
+const toInputDate = (value) => {
+  const date = toDate(value)
+  if (!date) return ''
+  return date.toISOString().slice(0, 10)
+}
+
 export const ExpensesPanel = ({
   tripId,
   expenses,
@@ -44,6 +59,7 @@ export const ExpensesPanel = ({
 }) => {
   const baseCurrency = formatCurrencyCode(currency)
   const [form, setForm] = useState(() => createDefaultExpense(baseCurrency))
+  const [editingExpense, setEditingExpense] = useState(null)
 
   useEffect(() => {
     setForm((prev) => ({ ...prev, currency: baseCurrency }))
@@ -80,15 +96,24 @@ export const ExpensesPanel = ({
     }
 
     try {
-      await onAdd(tripId, {
+      const payload = {
         ...form,
         amount: Number(form.amount),
         currency: baseCurrency,
-      })
-      toast.success('Expense added')
+      }
+
+      if (editingExpense) {
+        await onUpdate(tripId, editingExpense.id, payload)
+        toast.success('Expense updated')
+        setEditingExpense(null)
+      } else {
+        await onAdd(tripId, payload)
+        toast.success('Expense added')
+      }
+
       setForm(createDefaultExpense(baseCurrency))
     } catch (error) {
-      const message = error.response?.data?.error?.message || 'Unable to add expense.'
+      const message = error.response?.data?.error?.message || 'Unable to save expense.'
       toast.error(message)
     }
   }
@@ -104,6 +129,23 @@ export const ExpensesPanel = ({
       const message = error.response?.data?.error?.message || 'Unable to remove expense.'
       toast.error(message)
     }
+  }
+
+  const handleEdit = (expense) => {
+    setEditingExpense(expense)
+    setForm({
+      category: expense.category || baseExpense.category,
+      amount: expense.amount?.toString() || '',
+      currency: expense.currency || baseCurrency,
+      spentAt: toInputDate(expense.spentAt),
+      merchant: expense.merchant || '',
+      notes: expense.notes || '',
+    })
+  }
+
+  const handleCancelEdit = () => {
+    setEditingExpense(null)
+    setForm(createDefaultExpense(baseCurrency))
   }
 
   return (
@@ -132,6 +174,17 @@ export const ExpensesPanel = ({
 
           {canEditExpenses && (
             <form onSubmit={handleSubmit} className="grid gap-3 md:grid-cols-5">
+              {editingExpense && (
+                <div className="md:col-span-5 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+                  <span>
+                    Editing expense for {editingExpense.merchant || 'this trip'} •{' '}
+                    {editingExpense.spentAt ? formatDate(editingExpense.spentAt) : 'Date TBD'}
+                  </span>
+                  <Button type="button" variant="outline" size="sm" onClick={handleCancelEdit}>
+                    Cancel edit
+                  </Button>
+                </div>
+              )}
               <div>
                 <Label htmlFor="expense-category" className="text-xs uppercase tracking-wide text-slate-500">
                   Category
@@ -209,7 +262,7 @@ export const ExpensesPanel = ({
                 />
               </div>
               <div className="md:col-span-5 flex justify-end">
-                <Button type="submit">Add expense</Button>
+                <Button type="submit">{editingExpense ? 'Save changes' : 'Add expense'}</Button>
               </div>
             </form>
           )}
@@ -263,14 +316,23 @@ export const ExpensesPanel = ({
                     </TableCell>
                     {canEditExpenses && (
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-rose-600 hover:bg-rose-50"
-                          onClick={() => handleRemove(expense)}
-                        >
-                          Remove
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(expense)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-rose-600 hover:bg-rose-50"
+                            onClick={() => handleRemove(expense)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>

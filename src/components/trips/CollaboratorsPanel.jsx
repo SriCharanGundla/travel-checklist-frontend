@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Copy } from 'lucide-react'
 import { Button } from '../ui/button'
@@ -74,16 +74,59 @@ export const CollaboratorsPanel = ({
   const [shareMaxUsages, setShareMaxUsages] = useState('')
   const [shareLinkTokens, setShareLinkTokens] = useState({})
   const [latestShareLink, setLatestShareLink] = useState(null)
+  const [collaboratorFilter, setCollaboratorFilter] = useState('')
+  const [shareLinkFilter, setShareLinkFilter] = useState('')
 
   const canManageCollaborators = permission?.level === 'admin'
   const canEditTrip = permission?.level === 'admin' || permission?.level === 'edit'
+
+  const filteredCollaborators = useMemo(() => {
+    if (!Array.isArray(collaborators) || !collaborators.length) {
+      return collaborators || []
+    }
+    const term = collaboratorFilter.trim().toLowerCase()
+    if (!term) return collaborators
+    return collaborators.filter((collaborator) => {
+      const values = [
+        collaborator.email,
+        collaborator.user?.firstName,
+        collaborator.user?.lastName,
+        collaborator.status,
+        PERMISSION_LABELS[collaborator.permissionLevel],
+      ]
+        .filter(Boolean)
+        .map((value) => value.toString().toLowerCase())
+      return values.some((value) => value.includes(term))
+    })
+  }, [collaborators, collaboratorFilter])
+
+  const filteredShareLinks = useMemo(() => {
+    if (!Array.isArray(shareLinks) || !shareLinks.length) {
+      return shareLinks || []
+    }
+    const term = shareLinkFilter.trim().toLowerCase()
+    if (!term) return shareLinks
+    return shareLinks.filter((link) => {
+      const values = [
+        link.label,
+        link.accessLevel,
+        link.token,
+        link.createdBy?.email,
+        link.createdBy?.firstName,
+        link.createdBy?.lastName,
+      ]
+        .filter(Boolean)
+        .map((value) => value.toString().toLowerCase())
+      return values.some((value) => value.includes(term))
+    })
+  }, [shareLinks, shareLinkFilter])
 
   const collaboratorMeta = collaboratorsMeta || {}
   const collaboratorPage = collaboratorMeta.page || 1
   const collaboratorLimit = collaboratorMeta.limit || 10
   const collaboratorTotal = collaboratorMeta.total ?? collaborators?.length ?? 0
   const collaboratorStart = collaboratorTotal === 0 ? 0 : (collaboratorPage - 1) * collaboratorLimit + 1
-  const collaboratorPageCount = collaborators?.length || 0
+  const collaboratorPageCount = filteredCollaborators.length || 0
   const collaboratorEnd = collaboratorPageCount > 0 ? collaboratorStart + collaboratorPageCount - 1 : collaboratorStart
   const collaboratorTotalPages = collaboratorMeta.totalPages || Math.max(Math.ceil(collaboratorTotal / collaboratorLimit), 1)
   const collaboratorPrevDisabled = collaboratorsLoading || collaboratorPage <= 1 || !onFetchCollaborators
@@ -95,7 +138,7 @@ export const CollaboratorsPanel = ({
   const shareLinkLimit = shareLinkMeta.limit || 10
   const shareLinkTotal = shareLinkMeta.total ?? shareLinks?.length ?? 0
   const shareLinkStart = shareLinkTotal === 0 ? 0 : (shareLinkPage - 1) * shareLinkLimit + 1
-  const shareLinkPageCount = shareLinks?.length || 0
+  const shareLinkPageCount = filteredShareLinks.length || 0
   const shareLinkEnd = shareLinkPageCount > 0 ? shareLinkStart + shareLinkPageCount - 1 : shareLinkStart
   const shareLinkTotalPages = shareLinkMeta.totalPages || Math.max(Math.ceil(shareLinkTotal / shareLinkLimit), 1)
   const shareLinkPrevDisabled = shareLinksLoading || shareLinkPage <= 1 || !onFetchShareLinks
@@ -353,6 +396,19 @@ export const CollaboratorsPanel = ({
             </div>
           ) : collaborators?.length ? (
             <>
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <Input
+                  placeholder="Filter collaborators"
+                  value={collaboratorFilter}
+                  onChange={(event) => setCollaboratorFilter(event.target.value)}
+                  className="sm:max-w-xs"
+                />
+                <p className="text-xs text-slate-500">
+                  Showing {filteredCollaborators.length} of {collaborators.length} collaborator
+                  {collaborators.length === 1 ? '' : 's'}
+                </p>
+              </div>
+
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -364,7 +420,7 @@ export const CollaboratorsPanel = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {collaborators.map((collaborator) => (
+                  {filteredCollaborators.map((collaborator) => (
                     <TableRow key={collaborator.id}>
                       <TableCell>
                         <div className="flex flex-col">
@@ -419,8 +475,8 @@ export const CollaboratorsPanel = ({
                                 onChange={(event) => handlePermissionChange(collaborator, event.target.value)}
                                 className="h-9 w-32 text-xs"
                               >
-                                <option value="view">View</option>
-                                <option value="edit">Edit</option>
+                                <option value="view">View only</option>
+                                <option value="edit">Editor</option>
                                 <option value="admin">Admin</option>
                               </Select>
                               <Button
@@ -428,7 +484,6 @@ export const CollaboratorsPanel = ({
                                 size="sm"
                                 className="text-rose-600 hover:bg-rose-50"
                                 onClick={() => handleRemove(collaborator)}
-                                disabled={collaborator.status !== 'accepted'}
                               >
                                 Remove
                               </Button>
@@ -438,11 +493,21 @@ export const CollaboratorsPanel = ({
                       )}
                     </TableRow>
                   ))}
+                  {!filteredCollaborators.length && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={canManageCollaborators ? 5 : 4}
+                        className="py-6 text-center text-sm text-slate-500"
+                      >
+                        No collaborators match your filter.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
               <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-xs text-slate-500">
-                  Showing {collaboratorStart}-{collaboratorEnd} of {collaboratorTotal} collaborators
+                  Showing {collaboratorStart === 0 ? 0 : collaboratorStart}-{collaboratorEnd} of {collaboratorTotal}
                 </p>
                 <div className="flex gap-2">
                   <Button
@@ -565,6 +630,18 @@ export const CollaboratorsPanel = ({
             </div>
           ) : shareLinks?.length ? (
             <>
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <Input
+                  placeholder="Filter share links"
+                  value={shareLinkFilter}
+                  onChange={(event) => setShareLinkFilter(event.target.value)}
+                  className="sm:max-w-xs"
+                />
+                <p className="text-xs text-slate-500">
+                  Showing {filteredShareLinks.length} of {shareLinks.length} link{shareLinks.length === 1 ? '' : 's'}
+                </p>
+              </div>
+
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -576,7 +653,7 @@ export const CollaboratorsPanel = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {shareLinks.map((link) => (
+                  {filteredShareLinks.map((link) => (
                     <TableRow key={link.id}>
                       <TableCell>
                         <div className="flex flex-col">
@@ -632,6 +709,13 @@ export const CollaboratorsPanel = ({
                       )}
                     </TableRow>
                   ))}
+                  {!filteredShareLinks.length && (
+                    <TableRow>
+                      <TableCell colSpan={canEditTrip ? 5 : 4} className="py-6 text-center text-sm text-slate-500">
+                        No share links match your filter.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
               <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
