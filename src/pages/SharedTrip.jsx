@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Textarea } from '../components/ui/textarea'
 import shareLinkService from '../services/shareLinkService'
 import { formatDate, formatDateRange, formatDateTime, formatRelativeDate } from '../utils/dateUtils'
+import { DatePicker, DateTimePicker } from '../components/ui/date-picker'
 
 const itineraryTypeLabels = {
   flight: 'Flight',
@@ -177,9 +178,15 @@ const SharedTrip = () => {
   const handleItineraryFormChange = (field) => (event) => {
     setItineraryForm((prev) => ({ ...prev, [field]: event.target.value }))
   }
+  const handleItineraryDateChange = (field) => (value) => {
+    setItineraryForm((prev) => ({ ...prev, [field]: value }))
+  }
 
   const handleExpenseFormChange = (field) => (event) => {
     setExpenseForm((prev) => ({ ...prev, [field]: event.target.value }))
+  }
+  const handleExpenseDateChange = (value) => {
+    setExpenseForm((prev) => ({ ...prev, spentAt: value }))
   }
 
   const handleSubmitItinerary = async (event) => {
@@ -290,7 +297,7 @@ const SharedTrip = () => {
   )
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-muted px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl space-y-6">
         {isLoading ? (
           <div className="space-y-4">
@@ -299,13 +306,13 @@ const SharedTrip = () => {
             <Skeleton className="h-64 rounded-xl" />
           </div>
         ) : error ? (
-          <Card className="border-rose-200 bg-rose-50/60">
+          <Card className="border-destructive/40 bg-destructive/15">
             <CardHeader>
-              <CardTitle className="text-rose-700">Share link unavailable</CardTitle>
-              <CardDescription className="text-rose-600">{error}</CardDescription>
+              <CardTitle className="text-destructive">Share link unavailable</CardTitle>
+              <CardDescription className="text-destructive">{error}</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-rose-700">
+              <p className="text-sm text-destructive">
                 Double-check the link or ask the trip organizer to resend your invitation.
               </p>
             </CardContent>
@@ -314,10 +321,10 @@ const SharedTrip = () => {
           <>
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-semibold text-slate-900">
+                <h1 className="text-3xl font-semibold text-foreground">
                   {trip?.name || 'Shared Trip'}
                 </h1>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-muted-foreground">
                   Last updated {formatRelativeDate(shareLink?.updatedAt)} · Access level{' '}
                   <Badge variant="outline" className="capitalize">
                     {shareLink?.accessLevel || 'view'}
@@ -330,12 +337,12 @@ const SharedTrip = () => {
                     {shareLink.label}
                   </Badge>
                 )}
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-muted-foreground">
                   Token usage {shareLink?.usageCount ?? 0}
                   {shareLink?.maxUsages ? ` / ${shareLink.maxUsages}` : ''}
                 </p>
                 {shareLink?.expiresAt && (
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-muted-foreground">
                     Expires {formatDateTime(shareLink.expiresAt)}
                   </p>
                 )}
@@ -352,11 +359,11 @@ const SharedTrip = () => {
               <CardContent>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {tripOverviewFields.map((field) => (
-                    <div key={field.label} className="rounded-lg border border-slate-100 bg-white p-4">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <div key={field.label} className="rounded-lg border border-border bg-card p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         {field.label}
                       </p>
-                      <p className="mt-2 text-sm text-slate-900">{field.value}</p>
+                      <p className="mt-2 text-sm text-foreground">{field.value}</p>
                     </div>
                   ))}
                 </div>
@@ -364,7 +371,7 @@ const SharedTrip = () => {
             </Card>
 
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="bg-white">
+              <TabsList className="bg-card">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
                 <TabsTrigger value="budget">Budget</TabsTrigger>
@@ -381,7 +388,7 @@ const SharedTrip = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <p className="text-sm text-slate-600">
+                    <p className="text-sm text-muted-foreground">
                       {canContribute
                         ? 'You can add quick itinerary ideas or expense notes below. Sign in for checklists, documents, and full collaboration tools.'
                         : 'This shared view is read-only. Request a collaborator invite or ask for a contribute-level link to add updates.'}
@@ -431,7 +438,7 @@ const SharedTrip = () => {
                     <CardContent>
                       <form onSubmit={handleSubmitItinerary} className="grid gap-3 md:grid-cols-2">
                         <div>
-                          <Label htmlFor="shared-itinerary-type" className="text-xs uppercase tracking-wide text-slate-500">
+                          <Label htmlFor="shared-itinerary-type" className="text-xs uppercase tracking-wide text-muted-foreground">
                             Type
                           </Label>
                           <Select
@@ -447,7 +454,7 @@ const SharedTrip = () => {
                           </Select>
                         </div>
                         <div>
-                          <Label htmlFor="shared-itinerary-title" className="text-xs uppercase tracking-wide text-slate-500">
+                          <Label htmlFor="shared-itinerary-title" className="text-xs uppercase tracking-wide text-muted-foreground">
                             Title
                           </Label>
                           <Input
@@ -459,29 +466,29 @@ const SharedTrip = () => {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="shared-itinerary-start" className="text-xs uppercase tracking-wide text-slate-500">
+                          <Label htmlFor="shared-itinerary-start" className="text-xs uppercase tracking-wide text-muted-foreground">
                             Start time
                           </Label>
-                          <Input
+                          <DateTimePicker
                             id="shared-itinerary-start"
-                            type="datetime-local"
                             value={itineraryForm.startTime}
-                            onChange={handleItineraryFormChange('startTime')}
+                            onChange={handleItineraryDateChange('startTime')}
+                            placeholder="Select start time"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="shared-itinerary-end" className="text-xs uppercase tracking-wide text-slate-500">
+                          <Label htmlFor="shared-itinerary-end" className="text-xs uppercase tracking-wide text-muted-foreground">
                             End time
                           </Label>
-                          <Input
+                          <DateTimePicker
                             id="shared-itinerary-end"
-                            type="datetime-local"
                             value={itineraryForm.endTime}
-                            onChange={handleItineraryFormChange('endTime')}
+                            onChange={handleItineraryDateChange('endTime')}
+                            placeholder="Select end time"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="shared-itinerary-location" className="text-xs uppercase tracking-wide text-slate-500">
+                          <Label htmlFor="shared-itinerary-location" className="text-xs uppercase tracking-wide text-muted-foreground">
                             Location
                           </Label>
                           <Input
@@ -492,7 +499,7 @@ const SharedTrip = () => {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="shared-itinerary-provider" className="text-xs uppercase tracking-wide text-slate-500">
+                          <Label htmlFor="shared-itinerary-provider" className="text-xs uppercase tracking-wide text-muted-foreground">
                             Provider / Organizer
                           </Label>
                           <Input
@@ -503,7 +510,7 @@ const SharedTrip = () => {
                           />
                         </div>
                         <div className="md:col-span-2">
-                          <Label htmlFor="shared-itinerary-notes" className="text-xs uppercase tracking-wide text-slate-500">
+                          <Label htmlFor="shared-itinerary-notes" className="text-xs uppercase tracking-wide text-muted-foreground">
                             Notes for the organizer
                           </Label>
                           <Textarea
@@ -529,7 +536,7 @@ const SharedTrip = () => {
                     <Card key={group.key}>
                       <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                         <div>
-                          <CardTitle className="text-base font-semibold text-slate-900">{group.label}</CardTitle>
+                          <CardTitle className="text-base font-semibold text-foreground">{group.label}</CardTitle>
                           <CardDescription>
                             {group.key === 'unscheduled'
                               ? 'Timing to be confirmed'
@@ -542,23 +549,23 @@ const SharedTrip = () => {
                       </CardHeader>
                       <CardContent className="space-y-4">
                         {group.items.map((item) => (
-                          <div key={item.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+                          <div key={item.id} className="rounded-lg border border-border bg-card p-4 shadow-sm">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <div className="flex items-center gap-2">
                                 <Badge variant="secondary" className="capitalize">
                                   {itineraryTypeLabels[item.type] || item.type}
                                 </Badge>
-                                <h3 className="font-semibold text-slate-900">{item.title}</h3>
+                                <h3 className="font-semibold text-foreground">{item.title}</h3>
                               </div>
                               {item.location && (
-                                <p className="text-xs text-slate-500">{item.location}</p>
+                                <p className="text-xs text-muted-foreground">{item.location}</p>
                               )}
                             </div>
-                            <p className="mt-2 text-sm text-slate-600">
+                            <p className="mt-2 text-sm text-muted-foreground">
                               {item.startTime ? formatDateTime(item.startTime) : 'Timing TBD'}
                               {item.endTime ? ` → ${formatDateTime(item.endTime)}` : ''}
                             </p>
-                            {item.notes && <p className="mt-2 text-sm text-slate-600">{item.notes}</p>}
+                            {item.notes && <p className="mt-2 text-sm text-muted-foreground">{item.notes}</p>}
                           </div>
                         ))}
                       </CardContent>
@@ -586,7 +593,7 @@ const SharedTrip = () => {
                     <CardContent>
                       <form onSubmit={handleSubmitExpense} className="grid gap-3 md:grid-cols-4">
                         <div>
-                          <Label htmlFor="shared-expense-category" className="text-xs uppercase tracking-wide text-slate-500">
+                          <Label htmlFor="shared-expense-category" className="text-xs uppercase tracking-wide text-muted-foreground">
                             Category
                           </Label>
                           <Select
@@ -602,7 +609,7 @@ const SharedTrip = () => {
                           </Select>
                         </div>
                         <div>
-                          <Label htmlFor="shared-expense-amount" className="text-xs uppercase tracking-wide text-slate-500">
+                          <Label htmlFor="shared-expense-amount" className="text-xs uppercase tracking-wide text-muted-foreground">
                             Amount
                           </Label>
                           <Input
@@ -616,7 +623,7 @@ const SharedTrip = () => {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="shared-expense-currency" className="text-xs uppercase tracking-wide text-slate-500">
+                          <Label htmlFor="shared-expense-currency" className="text-xs uppercase tracking-wide text-muted-foreground">
                             Currency
                           </Label>
                           <Input
@@ -632,18 +639,18 @@ const SharedTrip = () => {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="shared-expense-date" className="text-xs uppercase tracking-wide text-slate-500">
+                          <Label htmlFor="shared-expense-date" className="text-xs uppercase tracking-wide text-muted-foreground">
                             Date
                           </Label>
-                          <Input
+                          <DatePicker
                             id="shared-expense-date"
-                            type="date"
                             value={expenseForm.spentAt}
-                            onChange={handleExpenseFormChange('spentAt')}
+                            onChange={handleExpenseDateChange}
+                            placeholder="Select date"
                           />
                         </div>
                         <div className="md:col-span-2">
-                          <Label htmlFor="shared-expense-merchant" className="text-xs uppercase tracking-wide text-slate-500">
+                          <Label htmlFor="shared-expense-merchant" className="text-xs uppercase tracking-wide text-muted-foreground">
                             Merchant
                           </Label>
                           <Input
@@ -654,7 +661,7 @@ const SharedTrip = () => {
                           />
                         </div>
                         <div className="md:col-span-4">
-                          <Label htmlFor="shared-expense-notes" className="text-xs uppercase tracking-wide text-slate-500">
+                          <Label htmlFor="shared-expense-notes" className="text-xs uppercase tracking-wide text-muted-foreground">
                             Notes
                           </Label>
                           <Textarea
@@ -678,7 +685,7 @@ const SharedTrip = () => {
                 <Card>
                   <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <CardTitle className="text-base font-semibold text-slate-900">Spending summary</CardTitle>
+                      <CardTitle className="text-base font-semibold text-foreground">Spending summary</CardTitle>
                       <CardDescription>
                         Category breakdown for everyone using this link.
                       </CardDescription>
@@ -696,7 +703,7 @@ const SharedTrip = () => {
                           </Badge>
                         ))
                       ) : (
-                        <p className="text-sm text-slate-500">No expenses shared yet.</p>
+                        <p className="text-sm text-muted-foreground">No expenses shared yet.</p>
                       )}
                     </div>
                   </CardContent>
@@ -707,18 +714,18 @@ const SharedTrip = () => {
                     <Card key={expense.id}>
                       <CardContent className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                          <p className="text-sm font-semibold text-slate-900">
+                          <p className="text-sm font-semibold text-foreground">
                             {formatCurrency(expense.amount, expense.currency)}
                           </p>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-muted-foreground">
                             {expenseCategoryLabels[expense.category] || expense.category}
                             {expense.spentAt ? ` • ${formatDate(expense.spentAt)}` : ''}
                           </p>
                           {expense.notes && (
-                            <p className="text-xs text-slate-500">{expense.notes}</p>
+                            <p className="text-xs text-muted-foreground">{expense.notes}</p>
                           )}
                         </div>
-                        <div className="text-xs text-slate-400 text-right sm:text-left">
+                        <div className="text-xs text-muted-foreground text-right sm:text-left">
                           {expense.merchant || 'Merchant TBD'}
                         </div>
                       </CardContent>
@@ -743,13 +750,13 @@ const SharedTrip = () => {
                     <CardDescription>Keep this token private to maintain trip security.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <div className="rounded-lg border border-border bg-muted p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         Share token
                       </p>
-                      <p className="mt-2 break-all text-sm font-mono text-slate-700">{token}</p>
+                      <p className="mt-2 break-all text-sm font-mono text-foreground">{token}</p>
                     </div>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-muted-foreground">
                       Created {formatDateTime(shareLink?.createdAt)} ·
                       {shareLink?.revokedAt ? ` Revoked ${formatDateTime(shareLink.revokedAt)}` : ' Active'}
                     </p>

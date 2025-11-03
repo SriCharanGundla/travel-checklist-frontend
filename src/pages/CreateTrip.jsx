@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
@@ -11,6 +11,7 @@ import { Label } from '../components/ui/label'
 import { Textarea } from '../components/ui/textarea'
 import { Select } from '../components/ui/select'
 import { statusOptions, typeOptions, tripSchema } from '../utils/tripSchemas'
+import { DatePicker } from '../components/ui/date-picker'
 
 const CreateTrip = () => {
   const navigate = useNavigate()
@@ -18,6 +19,7 @@ const CreateTrip = () => {
   const {
     handleSubmit,
     register,
+    control,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(tripSchema),
@@ -59,13 +61,13 @@ const CreateTrip = () => {
   }
 
   const renderError = (fieldError) =>
-    fieldError ? <p className="mt-1 text-xs font-medium text-rose-600">{fieldError.message}</p> : null
+    fieldError ? <p className="mt-1 text-xs font-medium text-destructive">{fieldError.message}</p> : null
 
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold text-slate-900">Create a New Trip</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-2xl font-semibold text-foreground">Create a New Trip</h1>
+        <p className="text-sm text-muted-foreground">
           Capture the essentials now and invite travelers later. You can always refine the details as plans evolve.
         </p>
       </div>
@@ -91,7 +93,7 @@ const CreateTrip = () => {
                   Primary destination
                 </Label>
                 <div className="relative">
-                  <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input id="destination" className="pl-9" placeholder="City or region" {...register('destination')} />
                 </div>
                 {renderError(errors.destination)}
@@ -100,36 +102,84 @@ const CreateTrip = () => {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="startDate">Start date</Label>
-                  <Input id="startDate" type="date" {...register('startDate')} />
+                  <Controller
+                    name="startDate"
+                    control={control}
+                    render={({ field }) => (
+                      <DatePicker
+                        id="startDate"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        placeholder="Select start date"
+                      />
+                    )}
+                  />
                   {renderError(errors.startDate)}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="endDate">End date</Label>
-                  <Input id="endDate" type="date" {...register('endDate')} />
+                  <Controller
+                    name="endDate"
+                    control={control}
+                    render={({ field }) => (
+                      <DatePicker
+                        id="endDate"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        placeholder="Select end date"
+                      />
+                    )}
+                  />
                   {renderError(errors.endDate)}
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="status">Trip status</Label>
-                <Select id="status" {...register('status')}>
-                  {statusOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </Select>
+                <Controller
+                  name="status"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      id="status"
+                      name={field.name}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      onBlur={field.onBlur}
+                    >
+                      {statusOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="type">Trip type</Label>
-                <Select id="type" {...register('type')}>
-                  {typeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </Select>
+                <Controller
+                  name="type"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      id="type"
+                      name={field.name}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      onBlur={field.onBlur}
+                    >
+                      {typeOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                />
               </div>
 
               <div className="space-y-2">
@@ -141,7 +191,7 @@ const CreateTrip = () => {
               <div className="space-y-2">
                 <Label htmlFor="budgetAmount">
                   Budget amount
-                  <span className="ml-2 inline-flex items-center gap-1 text-xs font-medium text-slate-500">
+                  <span className="ml-2 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
                     <PiggyBank className="h-3.5 w-3.5" aria-hidden="true" />
                     Optional
                   </span>

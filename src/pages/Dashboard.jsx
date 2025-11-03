@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
 import { useAuth } from '../contexts/AuthContext'
 import dashboardService from '../services/dashboardService'
+import { Button } from '../components/ui/button'
 
 const formatNumber = (value) => {
   if (value === null || value === undefined) {
@@ -14,9 +15,9 @@ const formatNumber = (value) => {
 const NextTripDetails = ({ trip }) => {
   if (!trip) {
     return (
-      <div className="rounded-xl bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900">Next Trip</h2>
-        <p className="mt-2 text-sm text-gray-600">Add start dates to your trips to see countdowns and destinations here.</p>
+      <div className="rounded-xl bg-card p-5 shadow-sm">
+        <h2 className="text-lg font-semibold text-foreground">Next Trip</h2>
+        <p className="mt-2 text-sm text-muted-foreground">Add start dates to your trips to see countdowns and destinations here.</p>
       </div>
     )
   }
@@ -26,16 +27,16 @@ const NextTripDetails = ({ trip }) => {
   const destinationLabel = trip.destination || 'Destination TBA'
 
   return (
-    <div className="rounded-xl bg-white p-5 shadow-sm">
-      <h2 className="text-lg font-semibold text-gray-900">Next Trip</h2>
-      <div className="mt-3 space-y-2 text-sm text-gray-700">
-        <p className="text-base font-semibold text-gray-900">{trip.name}</p>
-        <p className="text-gray-600">{destinationLabel}</p>
+    <div className="rounded-xl bg-card p-5 shadow-sm">
+      <h2 className="text-lg font-semibold text-foreground">Next Trip</h2>
+      <div className="mt-3 space-y-2 text-sm text-foreground">
+        <p className="text-base font-semibold text-foreground">{trip.name}</p>
+        <p className="text-muted-foreground">{destinationLabel}</p>
         <p>
-          <span className="font-medium text-gray-900">{startDateLabel}</span>
-          {endDateLabel ? <span className="text-gray-500"> → {endDateLabel}</span> : null}
+          <span className="font-medium text-foreground">{startDateLabel}</span>
+          {endDateLabel ? <span className="text-muted-foreground"> → {endDateLabel}</span> : null}
         </p>
-        <p className="text-gray-600">
+        <p className="text-muted-foreground">
           {trip.daysUntil === 0
             ? 'Trip is happening now!'
             : `${trip.daysUntil} day${trip.daysUntil === 1 ? '' : 's'} to go`}
@@ -46,10 +47,10 @@ const NextTripDetails = ({ trip }) => {
 }
 
 const TasksPlaceholder = ({ tasks }) => (
-  <div className="rounded-xl bg-white p-5 shadow-sm">
-    <h2 className="text-lg font-semibold text-gray-900">Tasks Due Soon</h2>
+  <div className="rounded-xl bg-card p-5 shadow-sm">
+    <h2 className="text-lg font-semibold text-foreground">Tasks Due Soon</h2>
     <p className="mt-4 text-3xl font-semibold text-primary">{formatNumber(tasks?.dueSoonCount ?? 0)}</p>
-    <p className="mt-2 text-sm text-gray-600">
+    <p className="mt-2 text-sm text-muted-foreground">
       {tasks?.placeholder
         ? tasks.message || 'Checklist tasks are coming online with the Phase 2 release.'
         : 'Tasks due within the next 7 days.'}
@@ -58,10 +59,10 @@ const TasksPlaceholder = ({ tasks }) => (
 )
 
 const KpiCard = ({ label, value, sublabel }) => (
-  <div className="rounded-xl bg-white p-5 shadow-sm">
-    <p className="text-sm font-medium text-gray-500">{label}</p>
-    <p className="mt-2 text-3xl font-semibold text-gray-900">{formatNumber(value)}</p>
-    {sublabel ? <p className="mt-1 text-xs text-gray-500">{sublabel}</p> : null}
+  <div className="rounded-xl bg-card p-5 shadow-sm">
+    <p className="text-sm font-medium text-muted-foreground">{label}</p>
+    <p className="mt-2 text-3xl font-semibold text-foreground">{formatNumber(value)}</p>
+    {sublabel ? <p className="mt-1 text-xs text-muted-foreground">{sublabel}</p> : null}
   </div>
 )
 
@@ -111,33 +112,27 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8">
-      <header className="rounded-xl bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-gray-900">Welcome, {user?.firstName || 'Traveler'}!</h1>
-        <p className="mt-2 text-sm text-gray-600">
+      <header className="rounded-xl bg-card p-6 shadow-sm">
+        <h1 className="text-2xl font-semibold text-foreground">Welcome, {user?.firstName || 'Traveler'}!</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
           Track upcoming trips, see recent changes, and jump into your checklists.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <Link
-            to="/trips/new"
-            className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90"
-          >
-            Plan a New Trip
-          </Link>
-          <Link
-            to="/trips"
-            className="inline-flex items-center rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-          >
-            View All Trips
-          </Link>
+          <Button asChild>
+            <Link to="/trips/new">Plan a New Trip</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/trips">View All Trips</Link>
+          </Button>
         </div>
       </header>
 
       {loading ? (
-        <div className="rounded-xl border border-dashed border-gray-200 bg-white/50 p-6 text-sm text-gray-500">
+        <div className="rounded-xl border border-dashed border-border bg-card/50 p-6 text-sm text-muted-foreground">
           Loading your dashboard metrics…
         </div>
       ) : error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">{error}</div>
+        <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-6 text-sm text-destructive">{error}</div>
       ) : (
         <>
           <section className="grid gap-6 md:grid-cols-3">
@@ -151,21 +146,21 @@ const Dashboard = () => {
             <TasksPlaceholder tasks={metrics?.tasks} />
           </section>
 
-          <section className="rounded-xl bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900">Status Breakdown</h2>
+          <section className="rounded-xl bg-card p-5 shadow-sm">
+            <h2 className="text-lg font-semibold text-foreground">Status Breakdown</h2>
             {statusSummary.length === 0 ? (
-              <p className="mt-2 text-sm text-gray-600">Create trips and update their status to see insights here.</p>
+              <p className="mt-2 text-sm text-muted-foreground">Create trips and update their status to see insights here.</p>
             ) : (
-              <ul className="mt-3 grid gap-2 text-sm text-gray-700 md:grid-cols-2">
+              <ul className="mt-3 grid gap-2 text-sm text-foreground md:grid-cols-2">
                 {statusSummary.map(({ status, count }) => (
-                  <li key={status} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
-                    <span className="capitalize text-gray-600">{status}</span>
-                    <span className="font-semibold text-gray-900">{formatNumber(count)}</span>
+                  <li key={status} className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
+                    <span className="capitalize text-muted-foreground">{status}</span>
+                    <span className="font-semibold text-foreground">{formatNumber(count)}</span>
                   </li>
                 ))}
               </ul>
             )}
-            <p className="mt-4 text-xs text-gray-400">
+            <p className="mt-4 text-xs text-muted-foreground">
               Updated {metrics?.generatedAt ? format(new Date(metrics.generatedAt), 'MMM d, yyyy h:mm a') : 'recently'}
             </p>
           </section>

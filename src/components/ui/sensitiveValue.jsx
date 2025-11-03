@@ -7,7 +7,7 @@ export const SensitiveValue = ({ value, emptyPlaceholder = '—', className = ''
   const [visible, setVisible] = useState(false)
 
   if (!value) {
-    return <span className={cn('text-slate-400', className)}>{emptyPlaceholder}</span>
+    return <span className={cn('text-muted-foreground', className)}>{emptyPlaceholder}</span>
   }
 
   const masked = buildMaskedSecret(String(value))
@@ -18,7 +18,7 @@ export const SensitiveValue = ({ value, emptyPlaceholder = '—', className = ''
       <button
         type="button"
         onClick={() => setVisible((prev) => !prev)}
-        className="text-slate-500 transition hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         aria-label={visible ? 'Hide value' : 'Show value'}
       >
         {visible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}

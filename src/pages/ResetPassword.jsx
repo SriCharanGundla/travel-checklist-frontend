@@ -69,11 +69,11 @@ const ResetPassword = () => {
 
   if (!token) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6 py-12">
+      <div className="flex min-h-screen items-center justify-center bg-muted px-6 py-12">
         <div className="w-full max-w-md text-center">
           <Card className="overflow-hidden shadow-lg">
             <CardHeader className="space-y-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
-              <CardTitle className="text-2xl font-semibold text-slate-900">Reset link expired</CardTitle>
+              <CardTitle className="text-2xl font-semibold text-foreground">Reset link expired</CardTitle>
               <CardDescription className="text-sm">
                 The reset link is missing or invalid. Request a fresh one to continue.
               </CardDescription>
@@ -93,11 +93,11 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-muted px-6 py-12">
       <div className="w-full max-w-md">
         <Card className="overflow-hidden shadow-lg">
           <CardHeader className="space-y-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
-            <CardTitle className="text-2xl font-semibold text-slate-900">Choose a new password</CardTitle>
+            <CardTitle className="text-2xl font-semibold text-foreground">Choose a new password</CardTitle>
             <CardDescription className="text-sm">
               Use at least 8 characters, mixing uppercase, lowercase, and numbers for the best security.
             </CardDescription>
@@ -107,7 +107,7 @@ const ResetPassword = () => {
               <div className="space-y-2">
                 <Label htmlFor="password">New password</Label>
                 <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <SensitiveInput
                     id="password"
                     type="password"
@@ -117,14 +117,14 @@ const ResetPassword = () => {
                   />
                 </div>
                 {errors.password ? (
-                  <p className="mt-1 text-xs font-medium text-rose-600">{errors.password.message}</p>
+                  <p className="mt-1 text-xs font-medium text-destructive">{errors.password.message}</p>
                 ) : null}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm password</Label>
                 <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <SensitiveInput
                     id="confirmPassword"
                     type="password"
@@ -134,7 +134,7 @@ const ResetPassword = () => {
                   />
                 </div>
                 {errors.confirmPassword ? (
-                  <p className="mt-1 text-xs font-medium text-rose-600">{errors.confirmPassword.message}</p>
+                  <p className="mt-1 text-xs font-medium text-destructive">{errors.confirmPassword.message}</p>
                 ) : null}
               </div>
 
@@ -143,7 +143,7 @@ const ResetPassword = () => {
               </Button>
             </form>
 
-            <p className="text-center text-sm text-slate-600">
+            <p className="text-center text-sm text-muted-foreground">
               Need help?{' '}
               <Link to="/forgot-password" className="font-semibold text-primary hover:text-primary/80">
                 Send a new reset link

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../ui/button'
@@ -7,6 +7,7 @@ import { Badge } from '../ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
 import { Input } from '../ui/input'
+import { DatePicker } from '../ui/date-picker'
 import { SensitiveInput } from '../ui/sensitiveInput'
 import SensitiveValue from '../ui/sensitiveValue'
 import { Textarea } from '../ui/textarea'
@@ -52,7 +53,7 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
   const [directoryFilter, setDirectoryFilter] = useState('')
   const navigate = useNavigate()
 
-  const { register, handleSubmit, reset, formState } = useForm({ defaultValues: emptyForm })
+  const { register, handleSubmit, reset, control, formState } = useForm({ defaultValues: emptyForm })
 
   const {
     contacts,
@@ -204,19 +205,19 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
     }
 
     if (isPastDate(traveler.passportExpiry)) {
-      return <Badge className="bg-rose-100 text-rose-700">Expired</Badge>
+      return <Badge className="bg-destructive/15 text-destructive">Expired</Badge>
     }
 
     const expiryLabel = formatDate(traveler.passportExpiry)
-    return <Badge className="bg-emerald-100 text-emerald-700">Valid · {expiryLabel}</Badge>
+    return <Badge className="bg-success/15 text-success">Valid · {expiryLabel}</Badge>
   }
 
   return (
     <section className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Travelers</h2>
-          <p className="text-sm text-slate-500">{travelerCountLabel}</p>
+          <h2 className="text-lg font-semibold text-foreground">Travelers</h2>
+          <p className="text-sm text-muted-foreground">{travelerCountLabel}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleOpenDirectory}>
@@ -227,13 +228,13 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
       </div>
 
       {isLoading ? (
-        <div className="space-y-3 rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+        <div className="space-y-3 rounded-xl border border-border bg-card p-4 shadow-sm">
           <Skeleton className="h-12 w-full" />
           <Skeleton className="h-12 w-full" />
           <Skeleton className="h-12 w-full" />
         </div>
       ) : travelers?.length ? (
-        <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+        <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
@@ -249,19 +250,19 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
                 <TableRow key={traveler.id}>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className="font-medium text-slate-900">{traveler.fullName}</span>
+                      <span className="font-medium text-foreground">{traveler.fullName}</span>
                       {traveler.preferredName && (
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-muted-foreground">
                           Prefers {traveler.preferredName}
                         </span>
                       )}
                       {traveler.email && (
-                        <span className="text-xs text-slate-500">{maskEmail(traveler.email)}</span>
+                        <span className="text-xs text-muted-foreground">{maskEmail(traveler.email)}</span>
                       )}
                       {traveler.phone && (
                         <SensitiveValue
                           value={traveler.phone}
-                          className="text-xs text-slate-500"
+                          className="text-xs text-muted-foreground"
                           emptyPlaceholder="—"
                         />
                       )}
@@ -270,32 +271,32 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
                   <TableCell>
                     <div className="space-y-1">
                       {traveler.passportNumber ? (
-                        <div className="flex flex-col text-sm text-slate-700">
+                        <div className="flex flex-col text-sm text-foreground">
                           <SensitiveValue value={traveler.passportNumber} />
                           {traveler.passportCountry && (
-                            <span className="text-xs text-slate-400">{traveler.passportCountry}</span>
+                            <span className="text-xs text-muted-foreground">{traveler.passportCountry}</span>
                           )}
                         </div>
                       ) : (
-                        <p className="text-sm text-slate-400 italic">Not captured</p>
+                        <p className="text-sm text-muted-foreground italic">Not captured</p>
                       )}
                       {renderPassportStatus(traveler)}
                     </div>
                   </TableCell>
                   <TableCell>
                     {traveler.emergencyContactName ? (
-                      <div className="flex flex-col text-sm text-slate-700">
+                      <div className="flex flex-col text-sm text-foreground">
                         <span>{traveler.emergencyContactName}</span>
                         {traveler.emergencyContactPhone && (
                           <SensitiveValue
                             value={traveler.emergencyContactPhone}
-                            className="text-xs text-slate-500"
+                            className="text-xs text-muted-foreground"
                             emptyPlaceholder="—"
                           />
                         )}
                       </div>
                     ) : (
-                      <span className="text-sm text-slate-400 italic">Not provided</span>
+                      <span className="text-sm text-muted-foreground italic">Not provided</span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -313,7 +314,7 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
                       <Button
                         variant="outline"
                         size="sm"
-                        className="border-rose-200 text-rose-600 hover:bg-rose-50"
+                        className="border-destructive/40 text-destructive hover:bg-destructive/10"
                         onClick={() => handleRemove(traveler)}
                       >
                         Delete
@@ -326,9 +327,9 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
           </Table>
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center">
-          <p className="text-base font-medium text-slate-700">No travelers yet</p>
-          <p className="text-sm text-slate-500 max-w-md">
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-muted p-10 text-center">
+          <p className="text-base font-medium text-foreground">No travelers yet</p>
+          <p className="text-sm text-muted-foreground max-w-md">
             Invite fellow travelers, store emergency contacts, and keep passports organized in one
             place.
           </p>
@@ -374,7 +375,19 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="birthdate">Birthdate</Label>
-                <Input id="birthdate" type="date" {...register('birthdate')} />
+                <Controller
+                  control={control}
+                  name="birthdate"
+                  render={({ field }) => (
+                    <DatePicker
+                      id="birthdate"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      placeholder="Select birthdate"
+                    />
+                  )}
+                />
               </div>
             </div>
 
@@ -413,7 +426,19 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="passportExpiry">Passport expiry</Label>
-                <Input id="passportExpiry" type="date" {...register('passportExpiry')} />
+                <Controller
+                  control={control}
+                  name="passportExpiry"
+                  render={({ field }) => (
+                    <DatePicker
+                      id="passportExpiry"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      placeholder="Select expiry"
+                    />
+                  )}
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="emergencyContactName">Emergency contact</Label>
@@ -492,17 +517,17 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
                   {filteredContacts.map((contact) => (
                     <div
                       key={contact.id}
-                      className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                      className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div>
-                        <p className="text-base font-semibold text-slate-900">{contact.fullName}</p>
-                        <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
+                        <p className="text-base font-semibold text-foreground">{contact.fullName}</p>
+                        <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
                           {contact.preferredName && <span>Prefers {contact.preferredName}</span>}
                           {contact.email && <span>{maskEmail(contact.email)}</span>}
                           {contact.phone && (
                             <SensitiveValue
                               value={contact.phone}
-                              className="text-xs text-slate-500"
+                              className="text-xs text-muted-foreground"
                               emptyPlaceholder="—"
                             />
                           )}
@@ -517,12 +542,12 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
                   ))}
                 </div>
               ) : (
-                <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">
+                <p className="rounded-lg border border-dashed border-border bg-muted p-6 text-sm text-muted-foreground">
                   No saved travelers match your search.
                 </p>
               )
             ) : (
-              <div className="space-y-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">
+              <div className="space-y-3 rounded-lg border border-dashed border-border bg-muted p-6 text-sm text-muted-foreground">
                 <p>Save travelers in your profile to use this picker.</p>
                 <Button type="button" size="sm" onClick={handleManageDirectory}>
                   Go to profile

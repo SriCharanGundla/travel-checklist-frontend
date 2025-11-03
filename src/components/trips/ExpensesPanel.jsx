@@ -9,6 +9,7 @@ import { Select } from '../ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
 import { Skeleton } from '../ui/skeleton'
 import { formatDate } from '../../utils/dateUtils'
+import { DatePicker } from '../ui/date-picker'
 
 const categoryLabels = {
   accommodation: 'Accommodation',
@@ -88,6 +89,10 @@ export const ExpensesPanel = ({
     setForm((prev) => ({ ...prev, [field]: event.target.value }))
   }
 
+  const handleDateChange = (field) => (value) => {
+    setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
   const handleSubmit = async (event) => {
     event.preventDefault()
     if (!form.amount) {
@@ -153,7 +158,7 @@ export const ExpensesPanel = ({
       <Card>
         <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
-            <CardTitle className="text-lg font-semibold text-slate-900">Trip Budget</CardTitle>
+            <CardTitle className="text-lg font-semibold text-foreground">Trip Budget</CardTitle>
             <CardDescription>Track spending across categories.</CardDescription>
           </div>
           <Badge variant="outline" className="text-base">
@@ -168,14 +173,14 @@ export const ExpensesPanel = ({
               </Badge>
             ))}
             {!expenses.length && (
-              <p className="text-sm text-slate-500">No expenses recorded yet.</p>
+              <p className="text-sm text-muted-foreground">No expenses recorded yet.</p>
             )}
           </div>
 
           {canEditExpenses && (
             <form onSubmit={handleSubmit} className="grid gap-3 md:grid-cols-5">
               {editingExpense && (
-                <div className="md:col-span-5 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+                <div className="md:col-span-5 flex items-center justify-between rounded-lg border border-border bg-muted p-3 text-sm text-muted-foreground">
                   <span>
                     Editing expense for {editingExpense.merchant || 'this trip'} •{' '}
                     {editingExpense.spentAt ? formatDate(editingExpense.spentAt) : 'Date TBD'}
@@ -186,7 +191,7 @@ export const ExpensesPanel = ({
                 </div>
               )}
               <div>
-                <Label htmlFor="expense-category" className="text-xs uppercase tracking-wide text-slate-500">
+                <Label htmlFor="expense-category" className="text-xs uppercase tracking-wide text-muted-foreground">
                   Category
                 </Label>
                 <Select
@@ -202,7 +207,7 @@ export const ExpensesPanel = ({
                 </Select>
               </div>
               <div>
-                <Label htmlFor="expense-amount" className="text-xs uppercase tracking-wide text-slate-500">
+                <Label htmlFor="expense-amount" className="text-xs uppercase tracking-wide text-muted-foreground">
                   Amount
                 </Label>
                 <Input
@@ -216,7 +221,7 @@ export const ExpensesPanel = ({
                 />
               </div>
               <div>
-                <Label htmlFor="expense-currency" className="text-xs uppercase tracking-wide text-slate-500">
+                <Label htmlFor="expense-currency" className="text-xs uppercase tracking-wide text-muted-foreground">
                   Currency
                 </Label>
                 <Input
@@ -224,23 +229,23 @@ export const ExpensesPanel = ({
                   value={baseCurrency}
                   readOnly
                   aria-readonly="true"
-                  className="bg-slate-50 text-slate-600"
+                  className="bg-muted text-muted-foreground"
                 />
-                <p className="mt-1 text-xs text-slate-400">Adjust the trip currency in trip settings.</p>
+                <p className="mt-1 text-xs text-muted-foreground">Adjust the trip currency in trip settings.</p>
               </div>
               <div>
-                <Label htmlFor="expense-date" className="text-xs uppercase tracking-wide text-slate-500">
+                <Label htmlFor="expense-date" className="text-xs uppercase tracking-wide text-muted-foreground">
                   Date
                 </Label>
-                <Input
+                <DatePicker
                   id="expense-date"
-                  type="date"
                   value={form.spentAt}
-                  onChange={handleChange('spentAt')}
+                  onChange={handleDateChange('spentAt')}
+                  placeholder="Select date"
                 />
               </div>
               <div>
-                <Label htmlFor="expense-merchant" className="text-xs uppercase tracking-wide text-slate-500">
+                <Label htmlFor="expense-merchant" className="text-xs uppercase tracking-wide text-muted-foreground">
                   Merchant
                 </Label>
                 <Input
@@ -251,7 +256,7 @@ export const ExpensesPanel = ({
                 />
               </div>
               <div className="md:col-span-5">
-                <Label htmlFor="expense-notes" className="text-xs uppercase tracking-wide text-slate-500">
+                <Label htmlFor="expense-notes" className="text-xs uppercase tracking-wide text-muted-foreground">
                   Notes
                 </Label>
                 <Input
@@ -271,7 +276,7 @@ export const ExpensesPanel = ({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-slate-900">Expense Ledger</CardTitle>
+          <CardTitle className="text-lg font-semibold text-foreground">Expense Ledger</CardTitle>
           <CardDescription>Recent spending entries.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -295,7 +300,7 @@ export const ExpensesPanel = ({
               <TableBody>
                 {expenses.map((expense) => (
                   <TableRow key={expense.id}>
-                    <TableCell className="text-sm text-slate-700">
+                    <TableCell className="text-sm text-foreground">
                       {expense.spentAt ? formatDate(expense.spentAt) : '—'}
                     </TableCell>
                     <TableCell>
@@ -305,13 +310,13 @@ export const ExpensesPanel = ({
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-medium text-slate-900">{expense.merchant || '—'}</span>
+                        <span className="font-medium text-foreground">{expense.merchant || '—'}</span>
                         {expense.notes && (
-                          <span className="text-xs text-slate-500">{expense.notes}</span>
+                          <span className="text-xs text-muted-foreground">{expense.notes}</span>
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right font-semibold text-slate-900">
+                    <TableCell className="text-right font-semibold text-foreground">
                       {formatCurrency(expense.amount, expense.currency || baseCurrency)}
                     </TableCell>
                     {canEditExpenses && (
@@ -327,7 +332,7 @@ export const ExpensesPanel = ({
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-rose-600 hover:bg-rose-50"
+                            className="text-destructive hover:bg-destructive/10"
                             onClick={() => handleRemove(expense)}
                           >
                             Remove
@@ -340,7 +345,7 @@ export const ExpensesPanel = ({
               </TableBody>
             </Table>
           ) : (
-            <p className="text-sm text-slate-500">No expenses logged yet.</p>
+            <p className="text-sm text-muted-foreground">No expenses logged yet.</p>
           )}
         </CardContent>
       </Card>

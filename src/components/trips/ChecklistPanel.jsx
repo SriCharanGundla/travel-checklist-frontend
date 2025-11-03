@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
@@ -12,12 +12,13 @@ import { Select } from '../ui/select'
 import { Checkbox } from '../ui/checkbox'
 import { Skeleton } from '../ui/skeleton'
 import { formatDate } from '../../utils/dateUtils'
+import { DatePicker } from '../ui/date-picker'
 
 const PRIORITY_OPTIONS = [
-  { value: 'low', label: 'Low', tone: 'bg-slate-100 text-slate-700' },
-  { value: 'medium', label: 'Medium', tone: 'bg-blue-100 text-blue-700' },
-  { value: 'high', label: 'High', tone: 'bg-amber-100 text-amber-700' },
-  { value: 'critical', label: 'Critical', tone: 'bg-rose-100 text-rose-700' },
+  { value: 'low', label: 'Low', tone: 'bg-muted text-foreground' },
+  { value: 'medium', label: 'Medium', tone: 'bg-info/15 text-info' },
+  { value: 'high', label: 'High', tone: 'bg-warning/15 text-warning' },
+  { value: 'critical', label: 'Critical', tone: 'bg-destructive/15 text-destructive' },
 ]
 
 const categoryFormDefaults = {
@@ -35,7 +36,7 @@ const itemFormDefaults = {
 
 const priorityBadgeClass = (priority) =>
   PRIORITY_OPTIONS.find((option) => option.value === priority)?.tone ||
-  'bg-slate-100 text-slate-700'
+  'bg-muted text-foreground'
 
 export const ChecklistPanel = ({
   tripId,
@@ -62,6 +63,7 @@ export const ChecklistPanel = ({
     register: registerItem,
     handleSubmit: handleItemSubmit,
     reset: resetItemForm,
+    control: itemControl,
     formState: itemFormState,
   } = useForm({ defaultValues: itemFormDefaults })
 
@@ -137,8 +139,8 @@ export const ChecklistPanel = ({
     <section className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Checklist</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-lg font-semibold text-foreground">Checklist</h2>
+          <p className="text-sm text-muted-foreground">
             Track pre-trip tasks, packing, documents, and health requirements.
           </p>
         </div>
@@ -170,7 +172,7 @@ export const ChecklistPanel = ({
                     category.items.map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-start justify-between rounded-lg border border-slate-200 p-3"
+                        className="flex items-start justify-between rounded-lg border border-border p-3"
                       >
                         <div className="flex gap-3">
                           <Checkbox
@@ -178,8 +180,8 @@ export const ChecklistPanel = ({
                             onCheckedChange={() => handleToggleComplete(item)}
                           />
                           <div>
-                            <p className="font-medium text-slate-900">{item.title}</p>
-                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                            <p className="font-medium text-foreground">{item.title}</p>
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                               <Badge className={priorityBadgeClass(item.priority)}>
                                 {item.priority}
                               </Badge>
@@ -189,14 +191,14 @@ export const ChecklistPanel = ({
                               {item.dueDate && <span>Due {formatDate(item.dueDate)}</span>}
                             </div>
                             {item.notes && (
-                              <p className="mt-2 text-sm text-slate-600">{item.notes}</p>
+                              <p className="mt-2 text-sm text-muted-foreground">{item.notes}</p>
                             )}
                           </div>
                         </div>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-rose-600 hover:text-rose-700"
+                          className="text-destructive hover:text-destructive"
                           onClick={() => handleDeleteItem(item)}
                         >
                           Remove
@@ -204,8 +206,8 @@ export const ChecklistPanel = ({
                       </div>
                     ))
                   ) : (
-                    <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center">
-                      <p className="text-sm text-slate-500">No checklist items yet.</p>
+                    <div className="rounded-lg border border-dashed border-border p-6 text-center">
+                      <p className="text-sm text-muted-foreground">No checklist items yet.</p>
                     </div>
                   )}
                 </div>
@@ -215,9 +217,9 @@ export const ChecklistPanel = ({
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center">
-          <p className="text-base font-medium text-slate-700">No checklist items yet</p>
-          <p className="text-sm text-slate-500 max-w-md">
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-muted p-10 text-center">
+          <p className="text-base font-medium text-foreground">No checklist items yet</p>
+          <p className="text-sm text-muted-foreground max-w-md">
             Each new trip comes with recommended categories. Add tasks and packing items to
             collaborate with your travel companions.
           </p>
@@ -262,7 +264,7 @@ export const ChecklistPanel = ({
       </Dialog>
 
       <Dialog open={isItemDialogOpen} onOpenChange={setItemDialogOpen}>
-        <DialogContent>
+        <DialogContent className="min-w-2xl">
           <DialogHeader>
             <DialogTitle>Add checklist item</DialogTitle>
           </DialogHeader>
@@ -280,28 +282,66 @@ export const ChecklistPanel = ({
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="grid gap-2">
                 <Label htmlFor="itemPriority">Priority</Label>
-                <Select id="itemPriority" {...registerItem('priority')} required>
-                  {PRIORITY_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </Select>
+                <Controller
+                  name="priority"
+                  control={itemControl}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Select
+                      id="itemPriority"
+                      name={field.name}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      onBlur={field.onBlur}
+                      required
+                    >
+                      {PRIORITY_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="itemDueDate">Due date</Label>
-                <Input id="itemDueDate" type="date" {...registerItem('dueDate')} />
+                <Controller
+                  control={itemControl}
+                  name="dueDate"
+                  render={({ field }) => (
+                    <DatePicker
+                      id="itemDueDate"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      placeholder="Select due date"
+                    />
+                  )}
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="itemAssignee">Assignee</Label>
-                <Select id="itemAssignee" {...registerItem('assigneeTravelerId')}>
-                  <option value="">Unassigned</option>
-                  {travelers.map((traveler) => (
-                    <option key={traveler.id} value={traveler.id}>
-                      {traveler.fullName}
-                    </option>
-                  ))}
-                </Select>
+                <Controller
+                  name="assigneeTravelerId"
+                  control={itemControl}
+                  render={({ field }) => (
+                    <Select
+                      id="itemAssignee"
+                      name={field.name}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      onBlur={field.onBlur}
+                    >
+                      <option value="">Unassigned</option>
+                      {travelers.map((traveler) => (
+                        <option key={traveler.id} value={traveler.id}>
+                          {traveler.fullName}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                />
               </div>
             </div>
 
@@ -331,4 +371,3 @@ export const ChecklistPanel = ({
 }
 
 export default ChecklistPanel
-

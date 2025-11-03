@@ -139,7 +139,7 @@ const AcceptInvite = () => {
             <CardTitle>Adding you to the trip…</CardTitle>
             <CardDescription>Just a moment while we activate your access.</CardDescription>
           </CardHeader>
-          <CardContent className="flex items-center gap-3 text-slate-600">
+          <CardContent className="flex items-center gap-3 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
             Connecting you to your travel workspace
           </CardContent>
@@ -149,10 +149,10 @@ const AcceptInvite = () => {
 
     if (status === 'error') {
       return (
-        <Card className="max-w-xl border-rose-200 bg-rose-50/60">
+        <Card className="max-w-xl border-destructive/40 bg-destructive/15">
           <CardHeader>
-            <CardTitle className="text-rose-700">We couldn&apos;t accept this invitation</CardTitle>
-            <CardDescription className="text-rose-600">{error}</CardDescription>
+            <CardTitle className="text-destructive">We couldn&apos;t accept this invitation</CardTitle>
+            <CardDescription className="text-destructive">{error}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3 sm:flex-row">
             <Button onClick={() => navigate('/')} variant="outline" className="flex-1">
@@ -168,15 +168,15 @@ const AcceptInvite = () => {
 
     if (status === 'success') {
       return (
-        <Card className="max-w-2xl border-emerald-200 bg-emerald-50/60">
+        <Card className="max-w-2xl border-success/40 bg-success/15">
           <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <CardTitle className="text-emerald-800">You&apos;re in!</CardTitle>
-              <CardDescription className="text-emerald-700">
+              <CardTitle className="text-success">You&apos;re in!</CardTitle>
+              <CardDescription className="text-success">
                 {inviteDetails?.name} is now available on your dashboard.
               </CardDescription>
             </div>
-            <ShieldCheck className="h-8 w-8 text-emerald-500" aria-hidden="true" />
+            <ShieldCheck className="h-8 w-8 text-success" aria-hidden="true" />
           </CardHeader>
           <CardContent className="flex flex-col gap-3 sm:flex-row">
             <Button className="flex-1" onClick={handleViewTrip}>
@@ -194,7 +194,7 @@ const AcceptInvite = () => {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-muted px-4 py-12">
       {renderContent()}
     </div>
   )

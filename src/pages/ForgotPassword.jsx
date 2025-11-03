@@ -38,11 +38,11 @@ const ForgotPassword = () => {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-muted px-6 py-12">
       <div className="w-full max-w-md">
         <Card className="overflow-hidden shadow-lg">
           <CardHeader className="space-y-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
-            <CardTitle className="text-2xl font-semibold text-slate-900">Reset your password</CardTitle>
+            <CardTitle className="text-2xl font-semibold text-foreground">Reset your password</CardTitle>
             <CardDescription className="text-sm">
               Enter the email address associated with your account. We&apos;ll send a link to create a new password.
             </CardDescription>
@@ -52,7 +52,7 @@ const ForgotPassword = () => {
               <div className="space-y-2">
                 <Label htmlFor="email">Email address</Label>
                 <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="email"
                     type="email"
@@ -63,7 +63,7 @@ const ForgotPassword = () => {
                   />
                 </div>
                 {errors.email ? (
-                  <p className="mt-1 text-xs font-medium text-rose-600">{errors.email.message}</p>
+                  <p className="mt-1 text-xs font-medium text-destructive">{errors.email.message}</p>
                 ) : null}
               </div>
 
@@ -72,7 +72,7 @@ const ForgotPassword = () => {
               </Button>
             </form>
 
-            <p className="text-center text-sm text-slate-600">
+            <p className="text-center text-sm text-muted-foreground">
               Remembered it?{' '}
               <Link to="/login" className="font-semibold text-primary hover:text-primary/80">
                 Back to sign in

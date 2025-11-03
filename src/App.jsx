@@ -15,6 +15,7 @@ import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import ProtectedRoute from './components/common/ProtectedRoute'
 import DashboardLayout from './components/layout/DashboardLayout'
+import ThemeToggle from './components/common/ThemeToggle'
 
 function App() {
   return (
@@ -23,6 +24,9 @@ function App() {
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
+        <div className="fixed right-4 top-4 z-50 flex items-center">
+          <ThemeToggle />
+        </div>
         <Toaster position="top-right" />
         <Routes>
           <Route path="/" element={<Home />} />

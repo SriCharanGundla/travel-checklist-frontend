@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Skeleton } from '../ui/skeleton'
 import { formatDateTime, formatRelativeDate } from '../../utils/dateUtils'
 import { maskEmail } from '../../utils/privacy'
+import { DateTimePicker } from '../ui/date-picker'
 
 const PERMISSION_LABELS = {
   view: 'View only',
@@ -30,11 +31,11 @@ const toIsoString = (value) => {
 const statusBadgeClass = (status) => {
   switch (status) {
     case 'accepted':
-      return 'bg-emerald-100 text-emerald-700'
+      return 'bg-success/15 text-success'
     case 'declined':
-      return 'bg-rose-100 text-rose-700'
+      return 'bg-destructive/15 text-destructive'
     default:
-      return 'bg-amber-100 text-amber-700'
+      return 'bg-warning/15 text-warning'
   }
 }
 
@@ -185,9 +186,9 @@ export const CollaboratorsPanel = ({
         toast.success('Invitation sent')
         toast.custom(
           () => (
-            <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-md">
+            <div className="rounded-lg border border-border bg-card p-3 text-sm text-foreground shadow-md">
               <p className="font-medium">Invitation token generated</p>
-              <p className="mt-1 break-all text-xs text-slate-500">{result.inviteToken}</p>
+              <p className="mt-1 break-all text-xs text-muted-foreground">{result.inviteToken}</p>
             </div>
           ),
           { duration: 6000 }
@@ -214,9 +215,9 @@ export const CollaboratorsPanel = ({
         toast.success(`Invitation re-sent to ${maskEmail(collaborator.email)}`)
         toast.custom(
           () => (
-            <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-md">
+            <div className="rounded-lg border border-border bg-card p-3 text-sm text-foreground shadow-md">
               <p className="font-medium">New invitation token</p>
-              <p className="mt-1 break-all text-xs text-slate-500">{result.inviteToken}</p>
+              <p className="mt-1 break-all text-xs text-muted-foreground">{result.inviteToken}</p>
             </div>
           ),
           { duration: 6000 }
@@ -350,13 +351,13 @@ export const CollaboratorsPanel = ({
       <Card>
         <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
-            <CardTitle className="text-lg font-semibold text-slate-900">Collaborators</CardTitle>
+            <CardTitle className="text-lg font-semibold text-foreground">Collaborators</CardTitle>
             <CardDescription>Manage who can view or edit this trip.</CardDescription>
           </div>
           {canManageCollaborators && (
             <form className="flex flex-col gap-2 md:flex-row md:items-center" onSubmit={handleInvite}>
               <div className="flex flex-1 flex-col gap-1">
-                <Label htmlFor="collaborator-email" className="text-xs uppercase tracking-wide text-slate-500">
+                <Label htmlFor="collaborator-email" className="text-xs uppercase tracking-wide text-muted-foreground">
                   Invite by email
                 </Label>
                 <Input
@@ -369,7 +370,7 @@ export const CollaboratorsPanel = ({
                 />
               </div>
               <div className="flex flex-col gap-1 md:w-48">
-                <Label htmlFor="collaborator-permission" className="text-xs uppercase tracking-wide text-slate-500">
+                <Label htmlFor="collaborator-permission" className="text-xs uppercase tracking-wide text-muted-foreground">
                   Permission
                 </Label>
                 <Select
@@ -403,7 +404,7 @@ export const CollaboratorsPanel = ({
                   onChange={(event) => setCollaboratorFilter(event.target.value)}
                   className="sm:max-w-xs"
                 />
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   Showing {filteredCollaborators.length} of {collaborators.length} collaborator
                   {collaborators.length === 1 ? '' : 's'}
                 </p>
@@ -424,9 +425,9 @@ export const CollaboratorsPanel = ({
                     <TableRow key={collaborator.id}>
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="font-medium text-slate-900">{maskEmail(collaborator.email)}</span>
+                          <span className="font-medium text-foreground">{maskEmail(collaborator.email)}</span>
                           {collaborator.user?.firstName && (
-                            <span className="text-xs text-slate-500">
+                            <span className="text-xs text-muted-foreground">
                               {collaborator.user.firstName} {collaborator.user.lastName || ''}
                             </span>
                           )}
@@ -439,11 +440,11 @@ export const CollaboratorsPanel = ({
                         <Badge className={statusBadgeClass(collaborator.status)}>{collaborator.status}</Badge>
                       </TableCell>
                       <TableCell>
-                        <p className="text-sm text-slate-700">
+                        <p className="text-sm text-foreground">
                           {formatRelativeDate(collaborator.invitedAt) || 'Pending'}
                         </p>
                         {collaborator.respondedAt && (
-                          <p className="text-xs text-slate-400">
+                          <p className="text-xs text-muted-foreground">
                             Responded {formatRelativeDate(collaborator.respondedAt)}
                           </p>
                         )}
@@ -462,7 +463,7 @@ export const CollaboratorsPanel = ({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-rose-600 hover:bg-rose-50"
+                                className="text-destructive hover:bg-destructive/10"
                                 onClick={() => handleRemove(collaborator)}
                               >
                                 Cancel
@@ -482,7 +483,7 @@ export const CollaboratorsPanel = ({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-rose-600 hover:bg-rose-50"
+                                className="text-destructive hover:bg-destructive/10"
                                 onClick={() => handleRemove(collaborator)}
                               >
                                 Remove
@@ -497,7 +498,7 @@ export const CollaboratorsPanel = ({
                     <TableRow>
                       <TableCell
                         colSpan={canManageCollaborators ? 5 : 4}
-                        className="py-6 text-center text-sm text-slate-500"
+                        className="py-6 text-center text-sm text-muted-foreground"
                       >
                         No collaborators match your filter.
                       </TableCell>
@@ -506,7 +507,7 @@ export const CollaboratorsPanel = ({
                 </TableBody>
               </Table>
               <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   Showing {collaboratorStart === 0 ? 0 : collaboratorStart}-{collaboratorEnd} of {collaboratorTotal}
                 </p>
                 <div className="flex gap-2">
@@ -530,23 +531,23 @@ export const CollaboratorsPanel = ({
               </div>
             </>
           ) : (
-            <p className="text-sm text-slate-500">No collaborators yet. Invite teammates to start collaborating.</p>
+            <p className="text-sm text-muted-foreground">No collaborators yet. Invite teammates to start collaborating.</p>
           )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-slate-900">Share Links</CardTitle>
+          <CardTitle className="text-lg font-semibold text-foreground">Share Links</CardTitle>
           <CardDescription>Create view-only links for guests or external partners.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {latestShareLink && (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-lg border border-border bg-muted p-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-900">Link ready to share</p>
-                  <p className="mt-1 break-all text-xs text-slate-600">{latestShareLink.url}</p>
+                  <p className="text-sm font-medium text-foreground">Link ready to share</p>
+                  <p className="mt-1 break-all text-xs text-muted-foreground">{latestShareLink.url}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -561,7 +562,7 @@ export const CollaboratorsPanel = ({
                   </Button>
                 </div>
               </div>
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-xs text-muted-foreground">
                 Save this URL securely. For security reasons the full token is only shown immediately after creation.
               </p>
             </div>
@@ -570,7 +571,7 @@ export const CollaboratorsPanel = ({
           {canEditTrip && (
             <form className="grid gap-3 md:grid-cols-5" onSubmit={handleCreateShareLink}>
               <div className="md:col-span-2">
-                <Label htmlFor="share-label" className="text-xs uppercase tracking-wide text-slate-500">
+                <Label htmlFor="share-label" className="text-xs uppercase tracking-wide text-muted-foreground">
                   Label (optional)
                 </Label>
                 <Input
@@ -581,7 +582,7 @@ export const CollaboratorsPanel = ({
                 />
               </div>
               <div>
-                <Label htmlFor="share-access" className="text-xs uppercase tracking-wide text-slate-500">
+                <Label htmlFor="share-access" className="text-xs uppercase tracking-wide text-muted-foreground">
                   Access level
                 </Label>
                 <Select
@@ -594,18 +595,18 @@ export const CollaboratorsPanel = ({
                 </Select>
               </div>
               <div>
-                <Label htmlFor="share-expires" className="text-xs uppercase tracking-wide text-slate-500">
+                <Label htmlFor="share-expires" className="text-xs uppercase tracking-wide text-muted-foreground">
                   Expires (optional)
                 </Label>
-                <Input
+                <DateTimePicker
                   id="share-expires"
-                  type="datetime-local"
                   value={shareExpiresAt}
-                  onChange={(event) => setShareExpiresAt(event.target.value)}
+                  onChange={setShareExpiresAt}
+                  placeholder="Select expiration"
                 />
               </div>
               <div>
-                <Label htmlFor="share-uses" className="text-xs uppercase tracking-wide text-slate-500">
+                <Label htmlFor="share-uses" className="text-xs uppercase tracking-wide text-muted-foreground">
                   Max uses
                 </Label>
                 <Input
@@ -637,7 +638,7 @@ export const CollaboratorsPanel = ({
                   onChange={(event) => setShareLinkFilter(event.target.value)}
                   className="sm:max-w-xs"
                 />
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   Showing {filteredShareLinks.length} of {shareLinks.length} link{shareLinks.length === 1 ? '' : 's'}
                 </p>
               </div>
@@ -657,27 +658,27 @@ export const CollaboratorsPanel = ({
                     <TableRow key={link.id}>
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="font-medium text-slate-900">{link.label || 'Untitled link'}</span>
-                          <span className="text-xs text-slate-500">Created {formatRelativeDate(link.createdAt)}</span>
+                          <span className="font-medium text-foreground">{link.label || 'Untitled link'}</span>
+                          <span className="text-xs text-muted-foreground">Created {formatRelativeDate(link.createdAt)}</span>
                         </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">{link.accessLevel}</Badge>
                       </TableCell>
                       <TableCell>
-                        <p className="text-sm text-slate-700">
+                        <p className="text-sm text-foreground">
                           {link.usageCount}{' '}
                           {link.maxUsages ? `of ${link.maxUsages}` : 'uses'}
                         </p>
                         {link.revokedAt && (
-                          <p className="text-xs text-rose-500">Revoked {formatRelativeDate(link.revokedAt)}</p>
+                          <p className="text-xs text-destructive/80">Revoked {formatRelativeDate(link.revokedAt)}</p>
                         )}
                       </TableCell>
                       <TableCell>
                         {link.expiresAt ? (
-                          <p className="text-sm text-slate-700">{formatDateTime(link.expiresAt)}</p>
+                          <p className="text-sm text-foreground">{formatDateTime(link.expiresAt)}</p>
                         ) : (
-                          <p className="text-sm text-slate-400">No expiry</p>
+                          <p className="text-sm text-muted-foreground">No expiry</p>
                         )}
                       </TableCell>
                       {canEditTrip && (
@@ -688,7 +689,7 @@ export const CollaboratorsPanel = ({
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                className="gap-2 text-slate-600 hover:bg-slate-100"
+                                className="gap-2 text-muted-foreground hover:bg-muted"
                                 onClick={() => handleCopyShareLink(shareLinkTokens[link.id])}
                               >
                                 <Copy className="h-4 w-4" />
@@ -698,7 +699,7 @@ export const CollaboratorsPanel = ({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-rose-600 hover:bg-rose-50"
+                              className="text-destructive hover:bg-destructive/10"
                               onClick={() => handleRevokeShareLink(link)}
                               disabled={Boolean(link.revokedAt)}
                             >
@@ -711,7 +712,7 @@ export const CollaboratorsPanel = ({
                   ))}
                   {!filteredShareLinks.length && (
                     <TableRow>
-                      <TableCell colSpan={canEditTrip ? 5 : 4} className="py-6 text-center text-sm text-slate-500">
+                      <TableCell colSpan={canEditTrip ? 5 : 4} className="py-6 text-center text-sm text-muted-foreground">
                         No share links match your filter.
                       </TableCell>
                     </TableRow>
@@ -719,7 +720,7 @@ export const CollaboratorsPanel = ({
                 </TableBody>
               </Table>
               <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   Showing {shareLinkStart}-{shareLinkEnd} of {shareLinkTotal} share links
                 </p>
                 <div className="flex gap-2">
@@ -743,7 +744,7 @@ export const CollaboratorsPanel = ({
               </div>
             </>
           ) : (
-            <p className="text-sm text-slate-500">No share links created yet.</p>
+            <p className="text-sm text-muted-foreground">No share links created yet.</p>
           )}
         </CardContent>
       </Card>

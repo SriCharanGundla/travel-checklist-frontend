@@ -1,69 +1,121 @@
-import { forwardRef } from 'react'
-import { cn } from '../../lib/utils'
+import * as React from "react"
 
-const Table = forwardRef(({ className, ...props }, ref) => (
-  <div className="w-full overflow-auto">
-    <table
-      ref={ref}
-      className={cn('w-full caption-bottom text-sm text-slate-700', className)}
-      {...props}
-    />
-  </div>
-))
-Table.displayName = 'Table'
+import { cn } from "@/lib/utils"
 
-const TableHeader = ({ className, ...props }) => (
-  <thead className={cn('[&_tr]:border-b', className)} {...props} />
-)
-TableHeader.displayName = 'TableHeader'
+function Table({
+  className,
+  ...props
+}) {
+  return (
+    <div data-slot="table-container" className="relative w-full overflow-x-auto">
+      <table
+        data-slot="table"
+        className={cn("w-full caption-bottom text-sm", className)}
+        {...props} />
+    </div>
+  );
+}
 
-const TableBody = ({ className, ...props }) => (
-  <tbody className={cn('[&_tr:last-child]:border-0', className)} {...props} />
-)
-TableBody.displayName = 'TableBody'
+function TableHeader({
+  className,
+  ...props
+}) {
+  return (
+    <thead
+      data-slot="table-header"
+      className={cn("[&_tr]:border-b", className)}
+      {...props} />
+  );
+}
 
-const TableFooter = ({ className, ...props }) => (
-  <tfoot
-    className={cn(
-      'bg-slate-100 font-semibold text-slate-900',
-      className
-    )}
-    {...props}
-  />
-)
-TableFooter.displayName = 'TableFooter'
+function TableBody({
+  className,
+  ...props
+}) {
+  return (
+    <tbody
+      data-slot="table-body"
+      className={cn("[&_tr:last-child]:border-0", className)}
+      {...props} />
+  );
+}
 
-const TableRow = ({ className, ...props }) => (
-  <tr
-    className={cn(
-      'border-b border-slate-100 transition hover:bg-slate-50 data-[state=selected]:bg-slate-100',
-      className
-    )}
-    {...props}
-  />
-)
-TableRow.displayName = 'TableRow'
+function TableFooter({
+  className,
+  ...props
+}) {
+  return (
+    <tfoot
+      data-slot="table-footer"
+      className={cn("bg-muted/50 border-t font-medium [&>tr]:last:border-b-0", className)}
+      {...props} />
+  );
+}
 
-const TableHead = ({ className, ...props }) => (
-  <th
-    className={cn(
-      'h-11 px-3 text-left align-middle text-xs font-semibold uppercase tracking-wide text-slate-500',
-      className
-    )}
-    {...props}
-  />
-)
-TableHead.displayName = 'TableHead'
+function TableRow({
+  className,
+  ...props
+}) {
+  return (
+    <tr
+      data-slot="table-row"
+      className={cn(
+        "hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors",
+        className
+      )}
+      {...props} />
+  );
+}
 
-const TableCell = ({ className, ...props }) => (
-  <td className={cn('p-3 align-middle text-sm text-slate-700', className)} {...props} />
-)
-TableCell.displayName = 'TableCell'
+function TableHead({
+  className,
+  ...props
+}) {
+  return (
+    <th
+      data-slot="table-head"
+      className={cn(
+        "text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        className
+      )}
+      {...props} />
+  );
+}
 
-const TableCaption = ({ className, ...props }) => (
-  <caption className={cn('mt-4 text-sm text-slate-500', className)} {...props} />
-)
-TableCaption.displayName = 'TableCaption'
+function TableCell({
+  className,
+  ...props
+}) {
+  return (
+    <td
+      data-slot="table-cell"
+      className={cn(
+        "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        className
+      )}
+      {...props} />
+  );
+}
 
-export { Table, TableHeader, TableBody, TableFooter, TableRow, TableHead, TableCell, TableCaption }
+function TableCaption({
+  className,
+  ...props
+}) {
+  return (
+    <caption
+      data-slot="table-caption"
+      className={cn("text-muted-foreground mt-4 text-sm", className)}
+      {...props} />
+  );
+}
 
+export {
+  Table,
+  TableHeader,
+  TableBody,
+  TableFooter,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableCaption,
+}

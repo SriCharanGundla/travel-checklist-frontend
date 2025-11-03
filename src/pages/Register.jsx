@@ -71,23 +71,23 @@ const Register = () => {
   }
 
   const renderError = (fieldError) =>
-    fieldError ? <p className="mt-1 text-xs font-medium text-rose-600">{fieldError.message}</p> : null
+    fieldError ? <p className="mt-1 text-xs font-medium text-destructive">{fieldError.message}</p> : null
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-muted px-6 py-12">
       <div className="w-full max-w-3xl">
         <Card className="shadow-xl">
           <CardHeader className="grid gap-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent sm:grid-cols-2">
             <div>
-              <CardTitle className="text-2xl font-semibold text-slate-900">Create your travel workspace</CardTitle>
+              <CardTitle className="text-2xl font-semibold text-foreground">Create your travel workspace</CardTitle>
               <CardDescription className="text-sm leading-relaxed">
                 Invite collaborators, organize itineraries, track essential documents, and stay ahead of every departure date.
               </CardDescription>
             </div>
-            <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-white/70 p-4 text-sm text-slate-600">
+            <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-card/70 p-4 text-sm text-muted-foreground">
               <ShieldCheck className="mt-1 h-5 w-5 text-primary" aria-hidden="true" />
               <div>
-                <p className="font-semibold text-slate-700">Security-first foundation</p>
+                <p className="font-semibold text-foreground">Security-first foundation</p>
                 <p>
                   Traveler details and attachments are encrypted before they leave your browser, and secure links expire automatically to keep vault files private.
                 </p>
@@ -158,7 +158,7 @@ const Register = () => {
                     'Create account'
                   )}
                 </Button>
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-muted-foreground">
                   Already have an account?{' '}
                   <Link to="/login" className="font-semibold text-primary hover:text-primary/80">
                     Sign in

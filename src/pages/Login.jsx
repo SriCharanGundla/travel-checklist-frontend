@@ -50,15 +50,15 @@ const Login = () => {
   }
 
   const renderError = (fieldError) =>
-    fieldError ? <p className="mt-1 text-xs font-medium text-rose-600">{fieldError.message}</p> : null
+    fieldError ? <p className="mt-1 text-xs font-medium text-destructive">{fieldError.message}</p> : null
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-muted px-6 py-12">
       <div className="w-full max-w-md">
         <Card className="overflow-hidden shadow-lg">
           <CardHeader className="space-y-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
             <div>
-              <CardTitle className="text-2xl font-semibold text-slate-900">Welcome back</CardTitle>
+              <CardTitle className="text-2xl font-semibold text-foreground">Welcome back</CardTitle>
               <CardDescription className="text-sm">
                 Sign in to continue planning, coordinating, and checking off your travel essentials.
               </CardDescription>
@@ -69,7 +69,7 @@ const Login = () => {
               <div className="space-y-2">
                 <Label htmlFor="email">Email address</Label>
                 <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input id="email" type="email" autoComplete="email" className="pl-9" {...register('email')} />
                 </div>
                 {renderError(errors.email)}
@@ -105,12 +105,12 @@ const Login = () => {
               </Button>
             </form>
 
-            <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3 text-sm text-slate-600">
-              <span className="mr-1 font-medium text-slate-700">Tip:</span> Use the same credentials across web and mobile once
+            <div className="rounded-lg border border-border bg-muted/60 px-4 py-3 text-sm text-muted-foreground">
+              <span className="mr-1 font-medium text-foreground">Tip:</span> Use the same credentials across web and mobile once
               the companion app launches.
             </div>
 
-            <p className="text-center text-sm text-slate-600">
+            <p className="text-center text-sm text-muted-foreground">
               No account yet?{' '}
               <Link to="/register" className="font-semibold text-primary hover:text-primary/80">
                 Create one now

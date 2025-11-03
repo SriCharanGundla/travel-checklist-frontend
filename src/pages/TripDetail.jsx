@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
@@ -31,6 +31,7 @@ import { useItineraryStore } from '../stores/itineraryStore'
 import { useExpensesStore } from '../stores/expensesStore'
 import { shallow } from 'zustand/shallow'
 import { statusOptions, tripSchema, typeOptions } from '../utils/tripSchemas'
+import { DatePicker } from '../components/ui/date-picker'
 
 const overviewFields = [
   { label: 'Destination', key: 'destination', fallback: 'Add destination' },
@@ -108,6 +109,7 @@ const TripDetail = () => {
     handleSubmit: handleTripUpdateSubmit,
     register: registerTripForm,
     reset: resetTripForm,
+    control: tripFormControl,
     formState: { errors: tripFormErrors, isSubmitting: isUpdatingTrip },
   } = useForm({
     resolver: zodResolver(tripSchema),
@@ -389,7 +391,7 @@ const TripDetail = () => {
   }
 
   const renderTripFormError = (fieldError) =>
-    fieldError ? <p className="mt-1 text-xs font-medium text-rose-600">{fieldError.message}</p> : null
+    fieldError ? <p className="mt-1 text-xs font-medium text-destructive">{fieldError.message}</p> : null
 
   const onSubmitTripUpdate = async (values) => {
     try {
@@ -459,13 +461,13 @@ const TripDetail = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">{trip.name}</h1>
-          <p className="text-sm text-slate-500">{formatDateRange(trip.startDate, trip.endDate)}</p>
+          <h1 className="text-2xl font-semibold text-foreground">{trip.name}</h1>
+          <p className="text-sm text-muted-foreground">{formatDateRange(trip.startDate, trip.endDate)}</p>
         </div>
         <div className="flex flex-wrap gap-3">
           <Link
             to="/trips"
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-muted"
           >
             Back to trips
           </Link>
@@ -474,7 +476,7 @@ const TripDetail = () => {
           )}
           <Button
             variant="outline"
-            className="border-rose-200 text-rose-600 hover:bg-rose-50"
+            className="border-destructive/40 text-destructive hover:bg-destructive/10"
             onClick={handleDeleteTrip}
           >
             Delete trip
@@ -485,14 +487,14 @@ const TripDetail = () => {
       <Card aria-labelledby="trip-export-title">
         <CardHeader className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <CardTitle id="trip-export-title" className="text-lg font-semibold text-slate-900">
+            <CardTitle id="trip-export-title" className="text-lg font-semibold text-foreground">
               Export data
             </CardTitle>
             <CardDescription>
               Download printable summaries or spreadsheets for trip planning and reporting.
             </CardDescription>
           </div>
-          <p className="text-sm text-slate-500 lg:text-right">
+          <p className="text-sm text-muted-foreground lg:text-right">
             Choose what to export, then download a fresh snapshot at any time.
           </p>
         </CardHeader>
@@ -552,7 +554,7 @@ const TripDetail = () => {
         <Card className="md:col-span-4">
           <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div>
-              <CardTitle className="text-lg font-semibold text-slate-900">Trip Snapshot</CardTitle>
+              <CardTitle className="text-lg font-semibold text-foreground">Trip Snapshot</CardTitle>
               <CardDescription>
                 {overviewFields
                   .filter((field) => ['destination', 'type', 'status'].includes(field.key))
@@ -581,18 +583,18 @@ const TripDetail = () => {
         {overviewFields.map(({ label, key, transform, fallback }) => (
           <Card key={key}>
             <CardHeader className="pb-4">
-              <CardTitle className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+              <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 {label}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <p className="text-base text-slate-900">
+              <p className="text-base text-foreground">
                 {transform
                   ? transform(trip[key], trip) || fallback
                   : trip[key] || fallback || 'Not provided'}
               </p>
               {key === 'startDate' && trip.endDate && (
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {formatDate(trip.startDate)} → {formatDate(trip.endDate)}
                 </p>
               )}
@@ -603,7 +605,7 @@ const TripDetail = () => {
 
       <Tabs defaultValue="overview">
         <div className="-mx-4 overflow-x-auto pb-2 sm:mx-0">
-          <TabsList className="bg-slate-100 min-w-max sm:min-w-0">
+          <TabsList className="bg-muted min-w-max sm:min-w-0">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="travelers">Travelers</TabsTrigger>
             <TabsTrigger value="checklist">Checklist</TabsTrigger>
@@ -629,20 +631,20 @@ const TripDetail = () => {
                   .map((item) => (
                     <div
                       key={item.id}
-                      className="flex flex-col rounded-lg border border-slate-200 p-3"
+                      className="flex flex-col rounded-lg border border-border p-3"
                     >
                       <div className="flex items-center justify-between">
-                        <p className="font-medium text-slate-900">{item.title}</p>
+                        <p className="font-medium text-foreground">{item.title}</p>
                         <Badge className={priorityBadgeClass(item.priority)}>{item.priority}</Badge>
                       </div>
-                      <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-500">
+                      <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
                         {item.assignee && <span>Assigned to {item.assignee.fullName}</span>}
                         {item.dueDate && <span>Due {formatDate(item.dueDate)}</span>}
                       </div>
                     </div>
                   ))}
                 {!categories.length && (
-                  <p className="text-sm text-slate-500">Add checklist items to see them here.</p>
+                  <p className="text-sm text-muted-foreground">Add checklist items to see them here.</p>
                 )}
               </CardContent>
             </Card>
@@ -659,7 +661,7 @@ const TripDetail = () => {
                   expiringDocuments.map((document) => (
                     <div
                       key={document.id}
-                      className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-800"
+                      className="flex items-center justify-between rounded-lg border border-warning/40 bg-warning/15 p-3 text-warning"
                     >
                       <div>
                         <p className="font-medium capitalize">{document.type}</p>
@@ -668,13 +670,13 @@ const TripDetail = () => {
                           {formatDate(document.expiryDate)}
                         </p>
                       </div>
-                      <Badge className="bg-amber-100 text-amber-700">
+                      <Badge className="bg-warning/15 text-warning">
                         {document.status.replace('_', ' ')}
                       </Badge>
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-muted-foreground">
                     No expiring documents detected. Add passports, visas, or insurance to enable
                     alerts.
                   </p>
@@ -815,37 +817,85 @@ const TripDetail = () => {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:col-span-2">
                   <div className="space-y-2">
                     <Label htmlFor="edit-trip-start">Start date</Label>
-                    <Input id="edit-trip-start" type="date" {...registerTripForm('startDate')} />
+                    <Controller
+                      name="startDate"
+                      control={tripFormControl}
+                      render={({ field }) => (
+                        <DatePicker
+                          id="edit-trip-start"
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          placeholder="Select start date"
+                        />
+                      )}
+                    />
                     {renderTripFormError(tripFormErrors.startDate)}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="edit-trip-end">End date</Label>
-                    <Input id="edit-trip-end" type="date" {...registerTripForm('endDate')} />
+                    <Controller
+                      name="endDate"
+                      control={tripFormControl}
+                      render={({ field }) => (
+                        <DatePicker
+                          id="edit-trip-end"
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          placeholder="Select end date"
+                        />
+                      )}
+                    />
                     {renderTripFormError(tripFormErrors.endDate)}
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="edit-trip-status">Trip status</Label>
-                  <Select id="edit-trip-status" {...registerTripForm('status')}>
-                    {statusOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </Select>
+                  <Controller
+                    name="status"
+                    control={tripFormControl}
+                    render={({ field }) => (
+                      <Select
+                        id="edit-trip-status"
+                        name={field.name}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        onBlur={field.onBlur}
+                      >
+                        {statusOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                  />
                   {renderTripFormError(tripFormErrors.status)}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="edit-trip-type">Trip type</Label>
-                  <Select id="edit-trip-type" {...registerTripForm('type')}>
-                    {typeOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </Select>
+                  <Controller
+                    name="type"
+                    control={tripFormControl}
+                    render={({ field }) => (
+                      <Select
+                        id="edit-trip-type"
+                        name={field.name}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        onBlur={field.onBlur}
+                      >
+                        {typeOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                  />
                   {renderTripFormError(tripFormErrors.type)}
                 </div>
 
@@ -922,14 +972,14 @@ const TripDetail = () => {
 const priorityBadgeClass = (priority) => {
   switch (priority) {
     case 'critical':
-      return 'bg-rose-100 text-rose-700'
+      return 'bg-destructive/15 text-destructive'
     case 'high':
-      return 'bg-amber-100 text-amber-700'
+      return 'bg-warning/15 text-warning'
     case 'medium':
-      return 'bg-blue-100 text-blue-700'
+      return 'bg-info/15 text-info'
     case 'low':
     default:
-      return 'bg-slate-100 text-slate-700'
+      return 'bg-muted text-foreground'
   }
 }
 

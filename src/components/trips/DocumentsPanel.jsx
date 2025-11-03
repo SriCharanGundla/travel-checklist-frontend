@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { Link as LinkIcon, Loader2 } from 'lucide-react'
 import { Button } from '../ui/button'
@@ -15,6 +15,7 @@ import { Skeleton } from '../ui/skeleton'
 import { formatDate, isPastDate } from '../../utils/dateUtils'
 import SensitiveValue from '../ui/sensitiveValue'
 import documentService from '../../services/documentService'
+import { DatePicker } from '../ui/date-picker'
 
 const DOCUMENT_TYPES = [
   { value: 'passport', label: 'Passport' },
@@ -34,12 +35,12 @@ const DOCUMENT_STATUS = [
 ]
 
 const statusBadgeStyles = {
-  pending: 'bg-slate-100 text-slate-700',
-  applied: 'bg-amber-100 text-amber-700',
-  approved: 'bg-emerald-100 text-emerald-700',
-  valid: 'bg-emerald-100 text-emerald-700',
-  expiring_soon: 'bg-orange-100 text-orange-700',
-  expired: 'bg-rose-100 text-rose-700',
+  pending: 'bg-muted text-foreground',
+  applied: 'bg-warning/15 text-warning',
+  approved: 'bg-success/15 text-success',
+  valid: 'bg-success/15 text-success',
+  expiring_soon: 'bg-warning/15 text-warning',
+  expired: 'bg-destructive/15 text-destructive',
 }
 
 const emptyForm = {
@@ -67,7 +68,7 @@ export const DocumentsPanel = ({
   const [selectedDocument, setSelectedDocument] = useState(null)
   const [vaultLinkLoadingId, setVaultLinkLoadingId] = useState(null)
 
-  const { register, handleSubmit, reset, watch, formState } = useForm({
+  const { register, handleSubmit, reset, watch, control, formState } = useForm({
     defaultValues: emptyForm,
   })
 
@@ -199,8 +200,8 @@ export const DocumentsPanel = ({
     <section className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Documents</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-lg font-semibold text-foreground">Documents</h2>
+          <p className="text-sm text-muted-foreground">
             Track passports, visas, insurance, and other critical paperwork.
           </p>
         </div>
@@ -210,19 +211,19 @@ export const DocumentsPanel = ({
       </div>
 
       {!travelers?.length && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800">
+        <div className="rounded-xl border border-warning/40 bg-warning/15 p-4 text-warning">
           Add at least one traveler to begin tracking documents.
         </div>
       )}
 
       {isLoading ? (
-        <div className="space-y-3 rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+        <div className="space-y-3 rounded-xl border border-border bg-card p-4 shadow-sm">
           <Skeleton className="h-12 w-full" />
           <Skeleton className="h-12 w-full" />
           <Skeleton className="h-12 w-full" />
         </div>
       ) : documents?.length ? (
-        <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+        <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
@@ -242,17 +243,17 @@ export const DocumentsPanel = ({
                   <TableCell className="capitalize">{document.type}</TableCell>
                   <TableCell>{document.traveler?.fullName || 'Unknown traveler'}</TableCell>
                   <TableCell>
-                    <div className="flex flex-col text-sm text-slate-700">
+                    <div className="flex flex-col text-sm text-foreground">
                       <SensitiveValue value={document.identifier} />
                       {document.issuingCountry && (
-                        <span className="text-xs text-slate-400">{document.issuingCountry}</span>
+                        <span className="text-xs text-muted-foreground">{document.issuingCountry}</span>
                       )}
                     </div>
                   </TableCell>
                   <TableCell>
                     {document.hasVaultFile ? (
                       <div className="flex flex-col gap-2">
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-muted-foreground">
                           {document.vaultFileName || 'Secure attachment'}
                         </span>
                         <Button
@@ -277,13 +278,13 @@ export const DocumentsPanel = ({
                         </Button>
                       </div>
                     ) : (
-                      <span className="text-xs text-slate-400">No file stored</span>
+                      <span className="text-xs text-muted-foreground">No file stored</span>
                     )}
                   </TableCell>
                   <TableCell>{formatDate(document.issuedDate)}</TableCell>
                   <TableCell>{renderExpiryBadge(document)}</TableCell>
                   <TableCell>
-                    <Badge className={statusBadgeStyles[document.status] || 'bg-slate-100 text-slate-600'}>
+                    <Badge className={statusBadgeStyles[document.status] || 'bg-muted text-muted-foreground'}>
                       {document.status.replace('_', ' ')}
                     </Badge>
                   </TableCell>
@@ -295,7 +296,7 @@ export const DocumentsPanel = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        className="border-rose-200 text-rose-600 hover:bg-rose-50"
+                        className="border-destructive/40 text-destructive hover:bg-destructive/10"
                         onClick={() => handleRemove(document)}
                       >
                         Delete
@@ -308,9 +309,9 @@ export const DocumentsPanel = ({
           </Table>
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center">
-          <p className="text-base font-medium text-slate-700">No documents tracked yet</p>
-          <p className="text-sm text-slate-500 max-w-md">
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-muted p-10 text-center">
+          <p className="text-base font-medium text-foreground">No documents tracked yet</p>
+          <p className="text-sm text-muted-foreground max-w-md">
             Add passports, visas, and insurance policies to get expiry reminders and quick access
             during travel.
           </p>
@@ -330,23 +331,51 @@ export const DocumentsPanel = ({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="travelerId">Traveler</Label>
-                <Select id="travelerId" {...register('travelerId')} required>
-                  {travelers.map((traveler) => (
-                    <option key={traveler.id} value={traveler.id}>
-                      {traveler.fullName}
-                    </option>
-                  ))}
-                </Select>
+                <Controller
+                  name="travelerId"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Select
+                      id="travelerId"
+                      name={field.name}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      onBlur={field.onBlur}
+                      required
+                    >
+                      {travelers.map((traveler) => (
+                        <option key={traveler.id} value={traveler.id}>
+                          {traveler.fullName}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="type">Type</Label>
-                <Select id="type" {...register('type')} required>
-                  {DOCUMENT_TYPES.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </Select>
+                <Controller
+                  name="type"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Select
+                      id="type"
+                      name={field.name}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      onBlur={field.onBlur}
+                      required
+                    >
+                      {DOCUMENT_TYPES.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                />
               </div>
             </div>
 
@@ -374,21 +403,59 @@ export const DocumentsPanel = ({
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="grid gap-2">
                 <Label htmlFor="issuedDate">Issued</Label>
-                <Input id="issuedDate" type="date" {...register('issuedDate')} />
+                <Controller
+                  name="issuedDate"
+                  control={control}
+                  render={({ field }) => (
+                    <DatePicker
+                      id="issuedDate"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      placeholder="Select issued date"
+                    />
+                  )}
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="expiryDate">Expiry</Label>
-                <Input id="expiryDate" type="date" {...register('expiryDate')} />
+                <Controller
+                  name="expiryDate"
+                  control={control}
+                  render={({ field }) => (
+                    <DatePicker
+                      id="expiryDate"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      placeholder="Select expiry date"
+                    />
+                  )}
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="status">Status</Label>
-                <Select id="status" {...register('status')} required>
-                  {DOCUMENT_STATUS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </Select>
+                <Controller
+                  name="status"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Select
+                      id="status"
+                      name={field.name}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      onBlur={field.onBlur}
+                      required
+                    >
+                      {DOCUMENT_STATUS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                />
               </div>
             </div>
 
@@ -402,11 +469,11 @@ export const DocumentsPanel = ({
                   toggleLabel="Toggle secure file reference visibility"
                 />
                 {selectedDocument?.hasVaultFile ? (
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-muted-foreground">
                     A secure file is already stored. Providing a new URL will replace the existing attachment.
                   </p>
                 ) : (
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-muted-foreground">
                     Paste a secure vault URL (HTTPS, approved host). Leave blank to omit an attachment.
                   </p>
                 )}
@@ -418,7 +485,7 @@ export const DocumentsPanel = ({
             </div>
 
             {selectedStatus === 'expiring_soon' && (
-              <p className="text-sm text-amber-600">
+              <p className="text-sm text-warning">
                 Marked as expiring soon — consider renewing this document before it lapses.
               </p>
             )}

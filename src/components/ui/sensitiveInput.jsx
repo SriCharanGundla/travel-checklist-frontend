@@ -32,7 +32,7 @@ const SensitiveInput = forwardRef(
         {LeadingIcon ? (
           <LeadingIcon
             className={cn(
-              'pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400',
+              'pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground',
               leadingIconClassName,
             )}
             aria-hidden="true"
@@ -48,7 +48,7 @@ const SensitiveInput = forwardRef(
         <button
           type="button"
           onClick={handleToggle}
-          className="absolute inset-y-0 right-2 flex items-center justify-center px-1.5 text-slate-500 transition hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-sm px-1.5 text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           aria-label={toggleLabel}
           aria-pressed={visible}
         >

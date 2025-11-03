@@ -1,7 +1,15 @@
-import { cn } from '../../lib/utils'
+import { cn } from "@/lib/utils"
 
-const Skeleton = ({ className, ...props }) => (
-  <div className={cn('animate-pulse rounded-md bg-slate-200', className)} {...props} />
-)
+function Skeleton({
+  className,
+  ...props
+}) {
+  return (
+    <div
+      data-slot="skeleton"
+      className={cn("bg-accent animate-pulse rounded-md", className)}
+      {...props} />
+  );
+}
 
 export { Skeleton }

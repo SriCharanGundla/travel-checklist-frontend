@@ -27,6 +27,7 @@ import { Select } from '../ui/select'
 import { Skeleton } from '../ui/skeleton'
 import { cn } from '../../lib/utils'
 import { formatDateTime } from '../../utils/dateUtils'
+import { DateTimePicker } from '../ui/date-picker'
 
 const toIsoString = (value) => {
   if (!value) return null
@@ -290,6 +291,9 @@ export const ItineraryPanel = ({
   const handleChange = (field) => (event) => {
     setForm((prev) => ({ ...prev, [field]: event.target.value }))
   }
+  const handleDateTimeChange = (field) => (value) => {
+    setForm((prev) => ({ ...prev, [field]: value }))
+  }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -384,10 +388,10 @@ export const ItineraryPanel = ({
     const endTime = toDate(item.endTime)
 
     return (
-      <div className="text-sm text-slate-700">
+      <div className="text-sm text-foreground">
         <span className="font-semibold">{startTime ? formatDateTime(startTime, 'p') : 'TBD'}</span>
         {endTime && (
-          <span className="mt-1 block text-xs text-slate-500">
+          <span className="mt-1 block text-xs text-muted-foreground">
             {`Arrives ${formatDateTime(
               endTime,
               startTime && isSameDay(startTime, endTime) ? 'p' : 'MMM d • p'
@@ -405,11 +409,11 @@ export const ItineraryPanel = ({
     if (segment.isStart) {
       return (
         <div>
-          <span className="text-sm font-semibold text-slate-700">
+          <span className="text-sm font-semibold text-foreground">
             {startTime ? format(startTime, 'p') : 'TBD'}
           </span>
           {endTime && (
-            <span className="mt-1 block text-xs text-slate-500">
+            <span className="mt-1 block text-xs text-muted-foreground">
               {`Arrives ${format(
                 endTime,
                 startTime && isSameDay(startTime, endTime) ? 'p' : 'MMM d • p'
@@ -423,11 +427,11 @@ export const ItineraryPanel = ({
     if (segment.isEnd && endTime) {
       return (
         <div>
-          <span className="text-sm font-semibold text-slate-700">
+          <span className="text-sm font-semibold text-foreground">
             {`Arrives ${format(endTime, 'p')}`}
           </span>
           {startTime && !isSameDay(startTime, endTime) && (
-            <span className="mt-1 block text-xs text-slate-500">
+            <span className="mt-1 block text-xs text-muted-foreground">
               {`Departed ${format(startTime, 'MMM d • p')}`}
             </span>
           )}
@@ -437,11 +441,11 @@ export const ItineraryPanel = ({
 
     if (startTime) {
       return (
-        <span className="text-sm font-semibold text-slate-700">{format(startTime, 'p')}</span>
+        <span className="text-sm font-semibold text-foreground">{format(startTime, 'p')}</span>
       )
     }
 
-    return <span className="text-sm text-slate-500">Time TBD</span>
+    return <span className="text-sm text-muted-foreground">Time TBD</span>
   }
 
   const dayIsWithinTrip = (day) => {
@@ -465,7 +469,7 @@ export const ItineraryPanel = ({
       {canEditItinerary && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-slate-900">Add to itinerary</CardTitle>
+            <CardTitle className="text-lg font-semibold text-foreground">Add to itinerary</CardTitle>
             <CardDescription>
               {editingItem ? `Editing "${editingItem.title}"` : 'Outline flights, stays, and activities.'}
             </CardDescription>
@@ -473,7 +477,7 @@ export const ItineraryPanel = ({
           <CardContent>
             <form onSubmit={handleSubmit} className="grid gap-3 md:grid-cols-6">
               <div>
-                <Label htmlFor="itinerary-type" className="text-xs uppercase tracking-wide text-slate-500">
+                <Label htmlFor="itinerary-type" className="text-xs uppercase tracking-wide text-muted-foreground">
                   Type
                 </Label>
                 <Select
@@ -489,7 +493,7 @@ export const ItineraryPanel = ({
                 </Select>
               </div>
               <div className="md:col-span-2">
-                <Label htmlFor="itinerary-title" className="text-xs uppercase tracking-wide text-slate-500">
+                <Label htmlFor="itinerary-title" className="text-xs uppercase tracking-wide text-muted-foreground">
                   Title
                 </Label>
                 <Input
@@ -501,7 +505,7 @@ export const ItineraryPanel = ({
                 />
               </div>
               <div>
-                <Label htmlFor="itinerary-provider" className="text-xs uppercase tracking-wide text-slate-500">
+                <Label htmlFor="itinerary-provider" className="text-xs uppercase tracking-wide text-muted-foreground">
                   Provider
                 </Label>
                 <Input
@@ -512,29 +516,29 @@ export const ItineraryPanel = ({
                 />
               </div>
               <div>
-                <Label htmlFor="itinerary-start" className="text-xs uppercase tracking-wide text-slate-500">
+                <Label htmlFor="itinerary-start" className="text-xs uppercase tracking-wide text-muted-foreground">
                   Start
                 </Label>
-                <Input
+                <DateTimePicker
                   id="itinerary-start"
-                  type="datetime-local"
                   value={form.startTime}
-                  onChange={handleChange('startTime')}
+                  onChange={handleDateTimeChange('startTime')}
+                  placeholder="Select start time"
                 />
               </div>
               <div>
-                <Label htmlFor="itinerary-end" className="text-xs uppercase tracking-wide text-slate-500">
+                <Label htmlFor="itinerary-end" className="text-xs uppercase tracking-wide text-muted-foreground">
                   End
                 </Label>
-                <Input
+                <DateTimePicker
                   id="itinerary-end"
-                  type="datetime-local"
                   value={form.endTime}
-                  onChange={handleChange('endTime')}
+                  onChange={handleDateTimeChange('endTime')}
+                  placeholder="Select end time"
                 />
               </div>
               <div>
-                <Label htmlFor="itinerary-location" className="text-xs uppercase tracking-wide text-slate-500">
+                <Label htmlFor="itinerary-location" className="text-xs uppercase tracking-wide text-muted-foreground">
                   Location
                 </Label>
                 <Input
@@ -545,7 +549,7 @@ export const ItineraryPanel = ({
                 />
               </div>
               <div className="md:col-span-2">
-                <Label htmlFor="itinerary-booking" className="text-xs uppercase tracking-wide text-slate-500">
+                <Label htmlFor="itinerary-booking" className="text-xs uppercase tracking-wide text-muted-foreground">
                   Booking reference
                 </Label>
                 <Input
@@ -556,7 +560,7 @@ export const ItineraryPanel = ({
                 />
               </div>
               <div className="md:col-span-3">
-                <Label htmlFor="itinerary-notes" className="text-xs uppercase tracking-wide text-slate-500">
+                <Label htmlFor="itinerary-notes" className="text-xs uppercase tracking-wide text-muted-foreground">
                   Notes
                 </Label>
                 <Input
@@ -582,7 +586,7 @@ export const ItineraryPanel = ({
       <Card>
         <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <CardTitle className="text-lg font-semibold text-slate-900">Itinerary timeline</CardTitle>
+            <CardTitle className="text-lg font-semibold text-foreground">Itinerary timeline</CardTitle>
             <CardDescription>
               Switch between the calendar and the full list to review travel details.
             </CardDescription>
@@ -612,24 +616,24 @@ export const ItineraryPanel = ({
             </div>
           ) : viewMode === 'calendar' ? (
             <div className="grid gap-6 lg:grid-cols-[minmax(240px,0.9fr)_minmax(0,2.1fr)]">
-              <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
                 <div className="flex items-center justify-between">
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-slate-600"
+                    className="h-8 w-8 text-muted-foreground"
                     onClick={() => handleMonthChange(-1)}
                     aria-label="Previous month"
                   >
                     <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                   </Button>
-                  <div className="text-sm font-semibold text-slate-900">
+                  <div className="text-sm font-semibold text-foreground">
                     {format(activeMonth, 'MMMM yyyy')}
                   </div>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-slate-600"
+                    className="h-8 w-8 text-muted-foreground"
                     onClick={() => handleMonthChange(1)}
                     aria-label="Next month"
                   >
@@ -637,7 +641,7 @@ export const ItineraryPanel = ({
                   </Button>
                 </div>
 
-                <div className="mt-4 grid grid-cols-7 gap-1 text-center text-xs font-semibold uppercase tracking-wide text-slate-400">
+                <div className="mt-4 grid grid-cols-7 gap-1 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {weekdayLabels.map((label) => (
                     <span key={label}>{label}</span>
                   ))}
@@ -658,12 +662,12 @@ export const ItineraryPanel = ({
                         disabled={isDisabled}
                         onClick={() => handleSelectDay(day)}
                         className={cn(
-                          'flex h-9 w-9 items-center justify-center rounded-md text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400',
+                          'flex h-9 w-9 items-center justify-center rounded-md text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary/50',
                           {
-                            'text-slate-300': !isSameMonth(day, activeMonth),
-                            'border border-slate-300 bg-slate-50 text-slate-900': hasItinerary && !isSelected,
-                            'bg-slate-900 text-white shadow': isSelected,
-                            'ring-1 ring-slate-400': isToday && !isSelected,
+                            'text-muted-foreground': !isSameMonth(day, activeMonth),
+                            'border border-primary/30 bg-muted text-foreground': hasItinerary && !isSelected,
+                            'bg-primary text-primary-foreground shadow': isSelected,
+                            'ring-1 ring-primary/40': isToday && !isSelected,
                             'opacity-40 pointer-events-none': isDisabled,
                           }
                         )}
@@ -674,16 +678,16 @@ export const ItineraryPanel = ({
                   })}
                 </div>
                 {!items?.length && (
-                  <p className="mt-4 text-center text-xs text-slate-500">
+                  <p className="mt-4 text-center text-xs text-muted-foreground">
                     Add itinerary items to see them appear on the calendar.
                   </p>
                 )}
               </section>
 
               <section className="space-y-5">
-                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <h3 className="text-base font-semibold text-slate-900">
+                    <h3 className="text-base font-semibold text-foreground">
                       {selectedDayDate ? format(selectedDayDate, 'EEEE, MMM d, yyyy') : 'Select a day'}
                     </h3>
                     {selectedDaySegments.length > 0 && (
@@ -699,8 +703,8 @@ export const ItineraryPanel = ({
                         <div
                           key={`${segment.item.id}-${segment.dayKey}`}
                           className={cn(
-                            'rounded-lg border border-slate-200 p-4',
-                            editingItem?.id === segment.item.id && 'border-slate-400 bg-slate-50'
+                            'rounded-lg border border-border p-4',
+                            editingItem?.id === segment.item.id && 'border-primary bg-muted/70'
                           )}
                         >
                           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -709,21 +713,21 @@ export const ItineraryPanel = ({
                                 <Badge variant="secondary" className="capitalize">
                                   {typeLabels[segment.item.type] || segment.item.type}
                                 </Badge>
-                                <span className="text-base font-semibold text-slate-900">
+                                <span className="text-base font-semibold text-foreground">
                                   {segment.item.title}
                                 </span>
                               </div>
                               {segment.item.provider && (
-                                <p className="mt-1 text-sm text-slate-500">{segment.item.provider}</p>
+                                <p className="mt-1 text-sm text-muted-foreground">{segment.item.provider}</p>
                               )}
                               {segment.item.location && (
-                                <p className="mt-2 text-sm text-slate-600">{segment.item.location}</p>
+                                <p className="mt-2 text-sm text-muted-foreground">{segment.item.location}</p>
                               )}
                               {segment.item.notes && (
-                                <p className="mt-2 text-sm text-slate-600">{segment.item.notes}</p>
+                                <p className="mt-2 text-sm text-muted-foreground">{segment.item.notes}</p>
                               )}
                               {segment.item.bookingReference && (
-                                <p className="mt-3 text-xs uppercase tracking-wide text-slate-400">
+                                <p className="mt-3 text-xs uppercase tracking-wide text-muted-foreground">
                                   Ref: {segment.item.bookingReference}
                                 </p>
                               )}
@@ -742,7 +746,7 @@ export const ItineraryPanel = ({
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="text-rose-600 hover:bg-rose-50"
+                                    className="text-destructive hover:bg-destructive/10"
                                     onClick={() => handleRemove(segment.item)}
                                   >
                                     Remove
@@ -755,7 +759,7 @@ export const ItineraryPanel = ({
                       ))}
                     </div>
                   ) : (
-                    <p className="mt-6 text-sm text-slate-500">
+                    <p className="mt-6 text-sm text-muted-foreground">
                       {items?.length
                         ? 'No itinerary items are planned for this day.'
                         : 'Build your itinerary to keep travel days organized.'}
@@ -764,11 +768,11 @@ export const ItineraryPanel = ({
                 </div>
 
                 {unscheduled.length > 0 && (
-                  <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
+                  <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+                    <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                       Unscheduled items
                     </h4>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       Add start times to place these items on the calendar.
                     </p>
                     <div className="mt-3 space-y-3">
@@ -776,8 +780,8 @@ export const ItineraryPanel = ({
                         <div
                           key={item.id}
                           className={cn(
-                            'flex flex-col gap-2 rounded-lg border border-dashed border-slate-300 p-3 sm:flex-row sm:items-center sm:justify-between',
-                            editingItem?.id === item.id && 'border-slate-400 bg-slate-50'
+                            'flex flex-col gap-2 rounded-lg border border-dashed border-border/70 p-3 sm:flex-row sm:items-center sm:justify-between',
+                            editingItem?.id === item.id && 'border-primary bg-muted/70'
                           )}
                         >
                           <div className="flex flex-col">
@@ -785,9 +789,9 @@ export const ItineraryPanel = ({
                               <Badge variant="secondary" className="capitalize">
                                 {typeLabels[item.type] || item.type}
                               </Badge>
-                              <span className="text-sm font-medium text-slate-900">{item.title}</span>
+                              <span className="text-sm font-medium text-foreground">{item.title}</span>
                             </div>
-                            {item.notes && <span className="text-xs text-slate-500">{item.notes}</span>}
+                            {item.notes && <span className="text-xs text-muted-foreground">{item.notes}</span>}
                           </div>
                           {canEditItinerary && (
                             <div className="flex gap-2">
@@ -801,7 +805,7 @@ export const ItineraryPanel = ({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-rose-600 hover:bg-rose-50"
+                                className="text-destructive hover:bg-destructive/10"
                                 onClick={() => handleRemove(item)}
                               >
                                 Remove
@@ -819,9 +823,9 @@ export const ItineraryPanel = ({
             <div className="space-y-5">
               {timelineGroups.entries.length ? (
                 timelineGroups.entries.map((group) => (
-                  <div key={group.dayKey} className="rounded-xl border border-slate-200 bg-white p-4">
+                  <div key={group.dayKey} className="rounded-xl border border-border bg-card p-4">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                      <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                         {group.label}
                       </h3>
                       <Badge variant="outline">{group.items.length} item{group.items.length > 1 ? 's' : ''}</Badge>
@@ -831,8 +835,8 @@ export const ItineraryPanel = ({
                         <div
                           key={item.id}
                           className={cn(
-                            'flex flex-col gap-4 rounded-lg border border-slate-200 p-4 md:flex-row md:items-start md:justify-between',
-                            editingItem?.id === item.id && 'border-slate-400 bg-slate-50'
+                            'flex flex-col gap-4 rounded-lg border border-border p-4 md:flex-row md:items-start md:justify-between',
+                            editingItem?.id === item.id && 'border-primary bg-muted/70'
                           )}
                         >
                           <div className="flex-1">
@@ -840,19 +844,19 @@ export const ItineraryPanel = ({
                               <Badge variant="secondary" className="capitalize">
                                 {typeLabels[item.type] || item.type}
                               </Badge>
-                              <span className="text-base font-semibold text-slate-900">{item.title}</span>
+                              <span className="text-base font-semibold text-foreground">{item.title}</span>
                             </div>
                             {item.provider && (
-                              <p className="mt-1 text-sm text-slate-500">{item.provider}</p>
+                              <p className="mt-1 text-sm text-muted-foreground">{item.provider}</p>
                             )}
                             {item.location && (
-                              <p className="mt-2 text-sm text-slate-600">{item.location}</p>
+                              <p className="mt-2 text-sm text-muted-foreground">{item.location}</p>
                             )}
                             {item.notes && (
-                              <p className="mt-2 text-sm text-slate-600">{item.notes}</p>
+                              <p className="mt-2 text-sm text-muted-foreground">{item.notes}</p>
                             )}
                             {item.bookingReference && (
-                              <p className="mt-3 text-xs uppercase tracking-wide text-slate-400">
+                              <p className="mt-3 text-xs uppercase tracking-wide text-muted-foreground">
                                 Ref: {item.bookingReference}
                               </p>
                             )}
@@ -867,7 +871,7 @@ export const ItineraryPanel = ({
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="text-rose-600 hover:bg-rose-50"
+                                  className="text-destructive hover:bg-destructive/10"
                                   onClick={() => handleRemove(item)}
                                 >
                                   Remove
@@ -881,17 +885,17 @@ export const ItineraryPanel = ({
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-muted-foreground">
                   Add itinerary items to see the full timeline here.
                 </p>
               )}
 
               {timelineGroups.unscheduled.length > 0 && (
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                <div className="rounded-xl border border-border bg-card p-4">
+                  <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                     Unscheduled items
                   </h4>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Add start times to place these items on the timeline.
                   </p>
                   <div className="mt-3 space-y-3">
@@ -899,8 +903,8 @@ export const ItineraryPanel = ({
                       <div
                         key={item.id}
                         className={cn(
-                          'flex flex-col gap-2 rounded-lg border border-dashed border-slate-300 p-3 sm:flex-row sm:items-center sm:justify-between',
-                          editingItem?.id === item.id && 'border-slate-400 bg-slate-50'
+                          'flex flex-col gap-2 rounded-lg border border-dashed border-border/70 p-3 sm:flex-row sm:items-center sm:justify-between',
+                          editingItem?.id === item.id && 'border-primary bg-muted/70'
                         )}
                       >
                         <div className="flex flex-col">
@@ -908,9 +912,9 @@ export const ItineraryPanel = ({
                             <Badge variant="secondary" className="capitalize">
                               {typeLabels[item.type] || item.type}
                             </Badge>
-                            <span className="text-sm font-medium text-slate-900">{item.title}</span>
+                            <span className="text-sm font-medium text-foreground">{item.title}</span>
                           </div>
-                          {item.notes && <span className="text-xs text-slate-500">{item.notes}</span>}
+                          {item.notes && <span className="text-xs text-muted-foreground">{item.notes}</span>}
                         </div>
                         {canEditItinerary && (
                           <div className="flex gap-2">
@@ -920,7 +924,7 @@ export const ItineraryPanel = ({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-rose-600 hover:bg-rose-50"
+                              className="text-destructive hover:bg-destructive/10"
                               onClick={() => handleRemove(item)}
                             >
                               Remove

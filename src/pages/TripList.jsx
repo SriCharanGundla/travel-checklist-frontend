@@ -69,7 +69,7 @@ const TripList = () => {
   const skeletonItems = useMemo(
     () =>
       Array.from({ length: 3 }).map((_, index) => (
-        <div key={`trip-skeleton-${index}`} className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+        <div key={`trip-skeleton-${index}`} className="flex items-center justify-between border-b border-border px-6 py-5">
           <div className="space-y-2">
             <Skeleton className="h-5 w-40 rounded-md" />
             <Skeleton className="h-4 w-32 rounded-md" />
@@ -85,8 +85,8 @@ const TripList = () => {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-slate-900">Trips</h1>
-          <p className="text-sm text-slate-500">Manage destinations, schedules, and collaborators for upcoming travel.</p>
+          <h1 className="text-2xl font-semibold text-foreground">Trips</h1>
+          <p className="text-sm text-muted-foreground">Manage destinations, schedules, and collaborators for upcoming travel.</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Link to="/trips/new" className={cn(buttonVariants({ variant: 'default', size: 'lg' }), 'sm:w-auto')}>
@@ -102,7 +102,7 @@ const TripList = () => {
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="divide-y divide-slate-100">{skeletonItems}</div>
+            <div className="divide-y divide-border">{skeletonItems}</div>
           ) : trips.length === 0 ? (
             <EmptyState
               title="No trips yet"
@@ -114,23 +114,23 @@ const TripList = () => {
               }
             />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-border">
               {trips.map((trip) => (
                 <li key={trip.id} className="flex flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between">
                   <div className="space-y-1">
                     <Link
                       to={`/trips/${trip.id}`}
-                      className="text-lg font-semibold text-slate-900 transition hover:text-primary"
+                      className="text-lg font-semibold text-foreground transition hover:text-primary"
                     >
                       {trip.name}
                     </Link>
-                    <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                       <span className="inline-flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-primary" aria-hidden="true" />
                         {trip.destination || 'Destination TBD'}
                       </span>
                       <span className="inline-flex items-center gap-2">
-                        <CalendarRange className="h-4 w-4 text-slate-400" aria-hidden="true" />
+                        <CalendarRange className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                         {formatDateRange(trip.startDate, trip.endDate)}
                       </span>
                     </div>
@@ -151,7 +151,7 @@ const TripList = () => {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="text-rose-600 hover:text-rose-700"
+                      className="text-destructive hover:text-destructive"
                       onClick={() => handleDelete(trip.id)}
                       disabled={deletingId === trip.id}
                     >
