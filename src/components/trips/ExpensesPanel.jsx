@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Skeleton } from '../ui/skeleton'
 import { formatDate } from '../../utils/dateUtils'
 import { DatePicker } from '../ui/date-picker'
+import { confirmToast } from '../../lib/confirmToast'
 
 const categoryLabels = {
   accommodation: 'Accommodation',
@@ -123,17 +124,20 @@ export const ExpensesPanel = ({
     }
   }
 
-  const handleRemove = async (expense) => {
-    const confirmed = window.confirm(`Remove expense from ${expense.merchant || 'this trip'}?`)
-    if (!confirmed) return
-
-    try {
-      await onDelete(tripId, expense.id)
-      toast.success('Expense removed')
-    } catch (error) {
-      const message = error.response?.data?.error?.message || 'Unable to remove expense.'
-      toast.error(message)
-    }
+  const handleRemove = (expense) => {
+    confirmToast({
+      title: 'Remove expense?',
+      description: `Remove expense from ${expense.merchant || 'this trip'}?`,
+      confirmLabel: 'Remove',
+      cancelLabel: 'Cancel',
+      tone: 'danger',
+      onConfirm: () =>
+        toast.promise(onDelete(tripId, expense.id), {
+          loading: 'Removing expense…',
+          success: 'Expense removed',
+          error: (error) => error.response?.data?.error?.message || 'Unable to remove expense.',
+        }),
+    })
   }
 
   const handleEdit = (expense) => {

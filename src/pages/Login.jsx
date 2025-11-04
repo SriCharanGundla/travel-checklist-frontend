@@ -2,7 +2,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import { Loader2, Lock, Mail } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/button'
@@ -55,8 +55,8 @@ const Login = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted px-6 py-12">
       <div className="w-full max-w-md">
-        <Card className="overflow-hidden shadow-lg">
-          <CardHeader className="space-y-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
+        <Card className="overflow-hidden pt-0 shadow-lg">
+          <CardHeader className="space-y-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 py-6">
             <div>
               <CardTitle className="text-2xl font-semibold text-foreground">Welcome back</CardTitle>
               <CardDescription className="text-sm">

@@ -2,14 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Skeleton } from '../components/ui/skeleton'
 import { Label } from '../components/ui/label'
-import { Select } from '../components/ui/select'
+import { cn } from '../lib/utils'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog'
 import { Input } from '../components/ui/input'
 import { Textarea } from '../components/ui/textarea'
@@ -32,6 +32,7 @@ import { useExpensesStore } from '../stores/expensesStore'
 import { shallow } from 'zustand/shallow'
 import { statusOptions, tripSchema, typeOptions } from '../utils/tripSchemas'
 import { DatePicker } from '../components/ui/date-picker'
+import { confirmToast } from '../lib/confirmToast'
 
 const overviewFields = [
   { label: 'Destination', key: 'destination', fallback: 'Add destination' },
@@ -140,6 +141,7 @@ const TripDetail = () => {
     isLoading: checklistLoading,
     fetchBoard,
     createCategory,
+    deleteCategory,
     createItem,
     toggleItemCompletion,
     deleteItem,
@@ -149,6 +151,7 @@ const TripDetail = () => {
       isLoading: state.isLoading,
       fetchBoard: state.fetchBoard,
       createCategory: state.createCategory,
+      deleteCategory: state.deleteCategory,
       createItem: state.createItem,
       toggleItemCompletion: state.toggleItemCompletion,
       deleteItem: state.deleteItem,
@@ -361,18 +364,30 @@ const TripDetail = () => {
     )
   }, [tripId, trip?.permission, fetchShareLinks])
 
-  const handleDeleteTrip = async () => {
-    const confirmed = window.confirm('Delete this trip? This cannot be undone.')
-    if (!confirmed) return
-
-    try {
-      await deleteTrip(tripId)
-      toast.success('Trip deleted')
-      navigate('/trips', { replace: true })
-    } catch (error) {
-      const message = error.response?.data?.error?.message || 'Unable to delete trip.'
-      toast.error(message)
+  const handleDeleteTrip = () => {
+    const runDeletion = async () => {
+      try {
+        await deleteTrip(tripId)
+        navigate('/trips', { replace: true })
+      } catch (error) {
+        const message = error.response?.data?.error?.message || 'Unable to delete trip.'
+        throw new Error(message)
+      }
     }
+
+    confirmToast({
+      title: 'Delete this trip?',
+      description: 'This action cannot be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      tone: 'danger',
+      onConfirm: () =>
+        toast.promise(runDeletion(), {
+          loading: 'Deleting trip…',
+          success: 'Trip deleted',
+          error: (error) => error.message || 'Unable to delete trip.',
+        }),
+    })
   }
 
   const handleOpenEdit = () => {
@@ -502,33 +517,39 @@ const TripDetail = () => {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex-1 min-w-40">
               <Label htmlFor="export-resource">Dataset</Label>
-              <Select
+              <select
                 id="export-resource"
                 value={exportResource}
                 onChange={(event) => setExportResource(event.target.value)}
                 aria-label="Select dataset to export"
+                className={cn(
+                  'border-input focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex h-9 w-full items-center gap-2 rounded-md border bg-background px-3 text-sm shadow-xs outline-none transition focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50'
+                )}
               >
                 {exportResourceOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
                 ))}
-              </Select>
+              </select>
             </div>
             <div className="flex-1 min-w-[120px]">
               <Label htmlFor="export-format">Format</Label>
-              <Select
+              <select
                 id="export-format"
                 value={exportFormat}
                 onChange={(event) => setExportFormat(event.target.value)}
                 aria-label="Select export file format"
+                className={cn(
+                  'border-input focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex h-9 w-full items-center gap-2 rounded-md border bg-background px-3 text-sm shadow-xs outline-none transition focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50'
+                )}
               >
                 {exportFormatOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
                 ))}
-              </Select>
+              </select>
             </div>
             <Button
               type="button"
@@ -704,6 +725,7 @@ const TripDetail = () => {
             travelers={travelers}
             isLoading={checklistLoading}
             onCreateCategory={createCategory}
+            onDeleteCategory={deleteCategory}
             onCreateItem={createItem}
             onToggleItem={toggleItemCompletion}
             onDeleteItem={deleteItem}

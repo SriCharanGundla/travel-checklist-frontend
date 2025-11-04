@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import toast from 'react-hot-toast'
+import { Link, useLocation, useParams } from 'react-router-dom'
+import { toast } from 'sonner'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
@@ -74,6 +74,7 @@ const pruneEmpty = (payload) =>
 
 const SharedTrip = () => {
   const { token } = useParams()
+  const location = useLocation()
   const [shareLink, setShareLink] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -94,8 +95,23 @@ const SharedTrip = () => {
           currency: data?.trip?.budgetCurrency || prev.currency || 'USD',
         }))
       } catch (err) {
-        const message = err.response?.data?.error?.message || 'This share link is not available.'
-        setError(message)
+        const status = err.response?.status
+        if (status === 401 || status === 403) {
+          setError({
+            type: 'auth',
+            title: 'Join this trip',
+            description:
+              'Sign in or create an account using the same email address where you received the invite. You’ll be added automatically afterwards.',
+          })
+        } else {
+          const message = err.response?.data?.error?.message || 'This share link is not available.'
+          setError({
+            type: 'generic',
+            title: 'Share link unavailable',
+            description: message,
+          })
+        }
+        setShareLink(null)
       } finally {
         setIsLoading(false)
       }
@@ -306,15 +322,44 @@ const SharedTrip = () => {
             <Skeleton className="h-64 rounded-xl" />
           </div>
         ) : error ? (
-          <Card className="border-destructive/40 bg-destructive/15">
+          <Card
+            className={
+              error.type === 'auth'
+                ? 'border-primary/40 bg-primary/10'
+                : 'border-destructive/40 bg-destructive/15'
+            }
+          >
             <CardHeader>
-              <CardTitle className="text-destructive">Share link unavailable</CardTitle>
-              <CardDescription className="text-destructive">{error}</CardDescription>
+              <CardTitle
+                className={error.type === 'auth' ? 'text-foreground' : 'text-destructive'}
+              >
+                {error.title}
+              </CardTitle>
+              <CardDescription
+                className={error.type === 'auth' ? 'text-foreground/80' : 'text-destructive'}
+              >
+                {error.description}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-destructive">
-                Double-check the link or ask the trip organizer to resend your invitation.
-              </p>
+              {error.type === 'auth' ? (
+                <div className="flex flex-col gap-4 sm:flex-row">
+                  <Button asChild className="flex-1">
+                    <Link to="/login" state={{ from: location }}>
+                      Sign in
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="flex-1">
+                    <Link to="/register" state={{ from: location }}>
+                      Create account
+                    </Link>
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-sm text-destructive">
+                  Double-check the link or ask the trip organizer to resend your invitation.
+                </p>
+              )}
             </CardContent>
           </Card>
         ) : (

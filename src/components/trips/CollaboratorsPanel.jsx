@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import { Copy } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
@@ -12,6 +12,7 @@ import { Skeleton } from '../ui/skeleton'
 import { formatDateTime, formatRelativeDate } from '../../utils/dateUtils'
 import { maskEmail } from '../../utils/privacy'
 import { DateTimePicker } from '../ui/date-picker'
+import { confirmToast } from '../../lib/confirmToast'
 
 const PERMISSION_LABELS = {
   view: 'View only',
@@ -239,17 +240,20 @@ export const CollaboratorsPanel = ({
     }
   }
 
-  const handleRemove = async (collaborator) => {
-    const confirmed = window.confirm(`Remove ${maskEmail(collaborator.email)} from this trip?`)
-    if (!confirmed) return
-
-    try {
-      await onRemove(tripId, collaborator.id)
-      toast.success('Collaborator removed')
-    } catch (error) {
-      const message = error.response?.data?.error?.message || 'Unable to remove collaborator.'
-      toast.error(message)
-    }
+  const handleRemove = (collaborator) => {
+    confirmToast({
+      title: `Remove ${maskEmail(collaborator.email)}?`,
+      description: 'They will lose access immediately.',
+      confirmLabel: 'Remove',
+      cancelLabel: 'Cancel',
+      tone: 'danger',
+      onConfirm: () =>
+        toast.promise(onRemove(tripId, collaborator.id), {
+          loading: 'Removing collaborator…',
+          success: 'Collaborator removed',
+          error: (error) => error.response?.data?.error?.message || 'Unable to remove collaborator.',
+        }),
+    })
   }
 
   const handleCreateShareLink = async (event) => {
@@ -291,24 +295,36 @@ export const CollaboratorsPanel = ({
     }
   }
 
-  const handleRevokeShareLink = async (link) => {
-    const confirmed = window.confirm(`Revoke the share link "${link.label || 'Unnamed'}"?`)
-    if (!confirmed) return
-
-    try {
-      await onRevokeShareLink(tripId, link.id)
-      toast.success('Share link revoked')
-      setShareLinkTokens((prev) => {
-        if (!prev[link.id]) return prev
-        const updated = { ...prev }
-        delete updated[link.id]
-        return updated
-      })
-      setLatestShareLink((current) => (current?.id === link.id ? null : current))
-    } catch (error) {
-      const message = error.response?.data?.error?.message || 'Unable to revoke share link.'
-      toast.error(message)
+  const handleRevokeShareLink = (link) => {
+    const revoke = async () => {
+      try {
+        await onRevokeShareLink(tripId, link.id)
+        setShareLinkTokens((prev) => {
+          if (!prev[link.id]) return prev
+          const updated = { ...prev }
+          delete updated[link.id]
+          return updated
+        })
+        setLatestShareLink((current) => (current?.id === link.id ? null : current))
+      } catch (error) {
+        const message = error.response?.data?.error?.message || 'Unable to revoke share link.'
+        throw new Error(message)
+      }
     }
+
+    confirmToast({
+      title: 'Revoke share link?',
+      description: `Revoke the share link "${link.label || 'Unnamed'}"?`,
+      confirmLabel: 'Revoke',
+      cancelLabel: 'Cancel',
+      tone: 'danger',
+      onConfirm: () =>
+        toast.promise(revoke(), {
+          loading: 'Revoking link…',
+          success: 'Share link revoked',
+          error: (error) => error.message || 'Unable to revoke share link.',
+        }),
+    })
   }
 
   const copyToClipboard = async (value) => {

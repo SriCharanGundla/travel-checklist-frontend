@@ -1,11 +1,14 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import authService from '../services/authService'
 import collaboratorService from '../services/collaboratorService'
 
 export const AuthContext = createContext(null)
 
 const PENDING_INVITE_STORAGE_KEY = 'pendingInviteToken'
+const LAST_ACCEPTED_INVITE_KEY = 'acceptedInviteSnapshot'
+
+export const ACCEPTED_INVITE_STORAGE_KEY = LAST_ACCEPTED_INVITE_KEY
 
 const getBrowserTimezone = () => {
   try {
@@ -23,6 +26,12 @@ const getBrowserTimezone = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [inviteState, setInviteState] = useState({
+    token: null,
+    status: 'idle',
+    collaborator: null,
+    error: null,
+  })
 
   const clearSession = useCallback(() => {
     localStorage.removeItem('accessToken')
@@ -52,8 +61,31 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
+        setInviteState({
+          token,
+          status: 'processing',
+          collaborator: null,
+          error: null,
+        })
         const collaborator = await collaboratorService.acceptInvitation(token)
         localStorage.removeItem(PENDING_INVITE_STORAGE_KEY)
+        try {
+          const snapshot = {
+            token,
+            collaborator,
+            acceptedAt: new Date().toISOString(),
+          }
+          localStorage.setItem(LAST_ACCEPTED_INVITE_KEY, JSON.stringify(snapshot))
+        } catch (storageError) {
+          console.warn('Unable to persist accepted invite snapshot', storageError)
+        }
+
+        setInviteState({
+          token,
+          status: 'success',
+          collaborator,
+          error: null,
+        })
 
         if (!silent) {
           const tripName = collaborator?.trip?.name || 'the trip'
@@ -62,6 +94,43 @@ export const AuthProvider = ({ children }) => {
 
         return collaborator
       } catch (error) {
+        const errorCode = error.response?.data?.error?.code
+        if (errorCode === 'COLLABORATOR.TOKEN_CONSUMED') {
+          localStorage.removeItem(PENDING_INVITE_STORAGE_KEY)
+          try {
+            localStorage.setItem(
+              LAST_ACCEPTED_INVITE_KEY,
+              JSON.stringify({
+                token,
+                collaborator: null,
+                acceptedAt: new Date().toISOString(),
+              })
+            )
+          } catch (storageError) {
+            console.warn('Unable to persist accepted invite snapshot', storageError)
+          }
+
+          setInviteState({
+            token,
+            status: 'already-member',
+            collaborator: null,
+            error: null,
+          })
+
+          if (!silent) {
+            toast.success('You already have access to this trip.')
+          }
+
+          return null
+        }
+
+        setInviteState({
+          token,
+          status: 'error',
+          collaborator: null,
+          error:
+            error.response?.data?.error?.message || 'Unable to accept invitation.',
+        })
         if (!silent) {
           const message = error.response?.data?.error?.message || 'Unable to accept invitation.'
           toast.error(message)
@@ -191,8 +260,9 @@ export const AuthProvider = ({ children }) => {
       logout,
       setUser,
       processInviteToken,
+      inviteState,
     }),
-    [user, loading, login, register, logout, processInviteToken]
+    [user, loading, login, register, logout, processInviteToken, inviteState]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

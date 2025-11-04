@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
@@ -17,6 +17,7 @@ import { formatDate, isPastDate } from '../../utils/dateUtils'
 import { maskEmail } from '../../utils/privacy'
 import { useTravelerDirectoryStore } from '../../stores/travelerDirectoryStore'
 import { shallow } from 'zustand/shallow'
+import { confirmToast } from '../../lib/confirmToast'
 
 const emptyForm = {
   fullName: '',
@@ -128,18 +129,21 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
     setDialogOpen(true)
   }
 
-  const handleRemove = async (traveler) => {
-    const confirmed = window.confirm(`Remove ${traveler.fullName} from this trip?`)
-    if (!confirmed) return
-
-    try {
-      await onDelete(tripId, traveler.id)
-      toast.success('Traveler removed')
-    } catch (error) {
-      const message =
-        error.response?.data?.error?.message || 'Unable to remove traveler. Please try again.'
-      toast.error(message)
-    }
+  const handleRemove = (traveler) => {
+    confirmToast({
+      title: `Remove ${traveler.fullName}?`,
+      description: 'They will lose access to this trip.',
+      confirmLabel: 'Remove',
+      cancelLabel: 'Cancel',
+      tone: 'danger',
+      onConfirm: () =>
+        toast.promise(onDelete(tripId, traveler.id), {
+          loading: 'Removing traveler…',
+          success: 'Traveler removed',
+          error: (error) =>
+            error.response?.data?.error?.message || 'Unable to remove traveler. Please try again.',
+        }),
+    })
   }
 
   const handleOpenDirectory = () => {
@@ -155,8 +159,21 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
     navigate('/profile#travelers')
   }
 
+  const contactIdsInTrip = useMemo(() => {
+    if (!Array.isArray(travelers)) {
+      return new Set()
+    }
+    return new Set(travelers.filter((traveler) => traveler.contactId).map((traveler) => traveler.contactId))
+  }, [travelers])
+
   const handleAddSavedTraveler = async (contact) => {
+    if (contactIdsInTrip.has(contact.id)) {
+      toast.error(`${contact.fullName} is already part of this trip.`)
+      return
+    }
+
     const payload = {
+      contactId: contact.id,
       fullName: contact.fullName,
       preferredName: contact.preferredName,
       email: contact.email,
@@ -534,8 +551,12 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        <Button size="sm" onClick={() => handleAddSavedTraveler(contact)}>
-                          Add to trip
+                        <Button
+                          size="sm"
+                          onClick={() => handleAddSavedTraveler(contact)}
+                          disabled={contactIdsInTrip.has(contact.id)}
+                        >
+                          {contactIdsInTrip.has(contact.id) ? 'Already added' : 'Add to trip'}
                         </Button>
                       </div>
                     </div>

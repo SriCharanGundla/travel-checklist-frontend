@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import toast from 'react-hot-toast'
 import { Loader2, ShieldCheck } from 'lucide-react'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth, ACCEPTED_INVITE_STORAGE_KEY } from '../contexts/AuthContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 
@@ -12,7 +11,7 @@ const AcceptInvite = () => {
   const [searchParams] = useSearchParams()
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, loading: authLoading, processInviteToken } = useAuth()
+  const { user, loading: authLoading, processInviteToken, inviteState } = useAuth()
 
   const inviteToken = useMemo(() => {
     const raw = searchParams.get('token')
@@ -40,6 +39,46 @@ const AcceptInvite = () => {
       return
     }
 
+    const activeInvite = inviteState?.token === inviteToken ? inviteState : null
+    if (activeInvite) {
+      if (activeInvite.status === 'processing') {
+        setStatus('processing')
+        return
+      }
+      if (activeInvite.status === 'success') {
+        setAcceptedTrip(activeInvite.collaborator?.trip || null)
+        setStatus('success')
+        localStorage.removeItem(ACCEPTED_INVITE_STORAGE_KEY)
+        return
+      }
+      if (activeInvite.status === 'already-member') {
+        setAcceptedTrip(activeInvite.collaborator?.trip || null)
+        setStatus('already-member')
+        localStorage.removeItem(ACCEPTED_INVITE_STORAGE_KEY)
+        return
+      }
+      if (activeInvite.status === 'error') {
+        setError(activeInvite.error || 'Unable to accept invitation.')
+        setStatus('error')
+        return
+      }
+    }
+
+    let snapshot = null
+    try {
+      const raw = localStorage.getItem(ACCEPTED_INVITE_STORAGE_KEY)
+      snapshot = raw ? JSON.parse(raw) : null
+    } catch (err) {
+      console.warn('Unable to read accepted invite snapshot', err)
+      snapshot = null
+    }
+    if (snapshot?.token === inviteToken) {
+      setAcceptedTrip(snapshot?.collaborator?.trip || null)
+      setStatus('success')
+      localStorage.removeItem(ACCEPTED_INVITE_STORAGE_KEY)
+      return
+    }
+
     let cancelled = false
 
     const acceptInvite = async () => {
@@ -49,16 +88,17 @@ const AcceptInvite = () => {
         if (cancelled) return
         setAcceptedTrip(collaborator?.trip || null)
         setStatus('success')
-        toast.success(
-          collaborator?.trip?.name
-            ? `You're now collaborating on ${collaborator.trip.name}!`
-            : 'Invitation accepted!'
-        )
+        localStorage.removeItem(ACCEPTED_INVITE_STORAGE_KEY)
       } catch (err) {
         if (cancelled) return
-        const message = err.response?.data?.error?.message || 'Unable to accept invitation.'
-        setError(message)
-        setStatus('error')
+        const code = err.response?.data?.error?.code
+        if (code === 'COLLABORATOR.TOKEN_CONSUMED') {
+          setStatus('already-member')
+        } else {
+          const message = err.response?.data?.error?.message || 'Unable to accept invitation.'
+          setError(message)
+          setStatus('error')
+        }
       }
     }
 
@@ -67,7 +107,7 @@ const AcceptInvite = () => {
     return () => {
       cancelled = true
     }
-  }, [inviteToken, authLoading, user, processInviteToken])
+  }, [inviteToken, authLoading, user, processInviteToken, inviteState])
 
   const handleViewTrip = () => {
     if (acceptedTrip?.id) {
@@ -174,6 +214,30 @@ const AcceptInvite = () => {
               <CardTitle className="text-success">You&apos;re in!</CardTitle>
               <CardDescription className="text-success">
                 {inviteDetails?.name} is now available on your dashboard.
+              </CardDescription>
+            </div>
+            <ShieldCheck className="h-8 w-8 text-success" aria-hidden="true" />
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 sm:flex-row">
+            <Button className="flex-1" onClick={handleViewTrip}>
+              Open trip workspace
+            </Button>
+            <Button variant="outline" className="flex-1" onClick={() => navigate('/dashboard')}>
+              Go to dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (status === 'already-member') {
+      return (
+        <Card className="max-w-2xl border-success/40 bg-success/15">
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle className="text-success">You already have access</CardTitle>
+              <CardDescription className="text-success">
+                This trip is already available on your dashboard. Open it below.
               </CardDescription>
             </div>
             <ShieldCheck className="h-8 w-8 text-success" aria-hidden="true" />

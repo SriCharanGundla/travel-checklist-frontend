@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import { Link as LinkIcon, Loader2 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
@@ -16,6 +16,7 @@ import { formatDate, isPastDate } from '../../utils/dateUtils'
 import SensitiveValue from '../ui/sensitiveValue'
 import documentService from '../../services/documentService'
 import { DatePicker } from '../ui/date-picker'
+import { confirmToast } from '../../lib/confirmToast'
 
 const DOCUMENT_TYPES = [
   { value: 'passport', label: 'Passport' },
@@ -112,17 +113,23 @@ export const DocumentsPanel = ({
     setDialogOpen(true)
   }
 
-  const handleRemove = async (document) => {
-    const confirmed = window.confirm(`Remove ${document.type} for ${document.traveler?.fullName}?`)
-    if (!confirmed) return
-    try {
-      await onDelete(tripId, document.id)
-      toast.success('Document removed')
-    } catch (error) {
-      const message =
-        error.response?.data?.error?.message || 'Unable to remove document. Please try again.'
-      toast.error(message)
-    }
+  const handleRemove = (document) => {
+    confirmToast({
+      title: `Remove ${document.type}?`,
+      description: document.traveler?.fullName
+        ? `This will remove the document for ${document.traveler.fullName}.`
+        : 'This will remove the document.',
+      confirmLabel: 'Remove',
+      cancelLabel: 'Cancel',
+      tone: 'danger',
+      onConfirm: () =>
+        toast.promise(onDelete(tripId, document.id), {
+          loading: 'Removing document…',
+          success: 'Document removed',
+          error: (error) =>
+            error.response?.data?.error?.message || 'Unable to remove document. Please try again.',
+        }),
+    })
   }
 
   const onSubmit = async (values) => {

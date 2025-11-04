@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import {
   addDays,
   addMonths,
@@ -28,6 +28,7 @@ import { Skeleton } from '../ui/skeleton'
 import { cn } from '../../lib/utils'
 import { formatDateTime } from '../../utils/dateUtils'
 import { DateTimePicker } from '../ui/date-picker'
+import { confirmToast } from '../../lib/confirmToast'
 
 const toIsoString = (value) => {
   if (!value) return null
@@ -333,21 +334,33 @@ export const ItineraryPanel = ({
     }
   }
 
-  const handleRemove = async (item) => {
-    const confirmed = window.confirm(`Remove "${item.title}" from the itinerary?`)
-    if (!confirmed) return
-
-    try {
-      await onDelete(tripId, item.id)
-      toast.success('Itinerary item removed')
-      if (editingItem?.id === item.id) {
-        setEditingItem(null)
-        setForm({ ...defaultItem })
+  const handleRemove = (item) => {
+    const removeItem = async () => {
+      try {
+        await onDelete(tripId, item.id)
+        if (editingItem?.id === item.id) {
+          setEditingItem(null)
+          setForm({ ...defaultItem })
+        }
+      } catch (error) {
+        const message = error.response?.data?.error?.message || 'Unable to remove itinerary item.'
+        throw new Error(message)
       }
-    } catch (error) {
-      const message = error.response?.data?.error?.message || 'Unable to remove itinerary item.'
-      toast.error(message)
     }
+
+    confirmToast({
+      title: 'Remove itinerary item?',
+      description: `Remove "${item.title}" from the itinerary?`,
+      confirmLabel: 'Remove',
+      cancelLabel: 'Cancel',
+      tone: 'danger',
+      onConfirm: () =>
+        toast.promise(removeItem(), {
+          loading: 'Removing item…',
+          success: 'Itinerary item removed',
+          error: (error) => error.message || 'Unable to remove itinerary item.',
+        }),
+    })
   }
 
   const handleMonthChange = (offset) => {

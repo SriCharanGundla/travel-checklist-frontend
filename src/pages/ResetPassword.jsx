@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import { Lock } from 'lucide-react'
 import authService from '../services/authService'
 import { Button } from '../components/ui/button'
@@ -71,8 +71,8 @@ const ResetPassword = () => {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted px-6 py-12">
         <div className="w-full max-w-md text-center">
-          <Card className="overflow-hidden shadow-lg">
-            <CardHeader className="space-y-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
+          <Card className="overflow-hidden pt-0 shadow-lg">
+            <CardHeader className="space-y-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 py-6">
               <CardTitle className="text-2xl font-semibold text-foreground">Reset link expired</CardTitle>
               <CardDescription className="text-sm">
                 The reset link is missing or invalid. Request a fresh one to continue.
@@ -95,8 +95,8 @@ const ResetPassword = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted px-6 py-12">
       <div className="w-full max-w-md">
-        <Card className="overflow-hidden shadow-lg">
-          <CardHeader className="space-y-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
+        <Card className="overflow-hidden pt-0 shadow-lg">
+          <CardHeader className="space-y-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 py-6">
             <CardTitle className="text-2xl font-semibold text-foreground">Choose a new password</CardTitle>
             <CardDescription className="text-sm">
               Use at least 8 characters, mixing uppercase, lowercase, and numbers for the best security.

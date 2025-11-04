@@ -34,11 +34,14 @@ function CardHeader({
 
 function CardTitle({
   className,
+  level = 2,
   ...props
 }) {
   return (
     <div
       data-slot="card-title"
+      role="heading"
+      aria-level={level}
       className={cn("leading-none font-semibold", className)}
       {...props} />
   );

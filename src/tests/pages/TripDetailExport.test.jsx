@@ -3,10 +3,27 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import TripDetail from '../../pages/TripDetail'
 
-const toastMock = vi.hoisted(() => ({
-  success: vi.fn(),
-  error: vi.fn(),
-}))
+const toastMock = vi.hoisted(() => {
+  const promise = vi.fn((promiseOrFactory) => {
+    if (typeof promiseOrFactory === 'function') {
+      try {
+        return promiseOrFactory()
+      } catch (error) {
+        return Promise.reject(error)
+      }
+    }
+    return promiseOrFactory
+  })
+
+  return {
+    success: vi.fn(),
+    error: vi.fn(),
+    promise,
+    warning: vi.fn().mockReturnValue('mock-toast'),
+    dismiss: vi.fn(),
+    custom: vi.fn(),
+  }
+})
 
 const tripServiceMock = vi.hoisted(() => ({
   getTripById: vi.fn(),
@@ -36,8 +53,8 @@ const resetObject = (target, next) => {
 const createNoop = () => vi.fn()
 const createResolved = (value) => vi.fn().mockResolvedValue(value)
 
-vi.mock('react-hot-toast', () => ({
-  default: toastMock,
+vi.mock('sonner', () => ({
+  toast: toastMock,
 }))
 
 const { success: toastSuccess, error: toastError } = toastMock

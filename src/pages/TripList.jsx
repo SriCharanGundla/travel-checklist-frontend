@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import { CalendarRange, Loader2, MapPin, Trash2 } from 'lucide-react'
 import { getTrips, deleteTrip } from '../services/tripService'
 import { formatDateRange } from '../utils/dateUtils'
@@ -10,6 +10,7 @@ import { Badge } from '../components/ui/badge'
 import { Skeleton } from '../components/ui/skeleton'
 import { EmptyState } from '../components/common/EmptyState'
 import { cn } from '../lib/utils'
+import { confirmToast } from '../lib/confirmToast'
 
 const statusVariantMap = {
   planning: 'info',
@@ -49,21 +50,33 @@ const TripList = () => {
     loadTrips()
   }, [])
 
-  const handleDelete = async (tripId) => {
-    const confirmed = window.confirm('Are you sure you want to delete this trip?')
-    if (!confirmed) return
-
-    setDeletingId(tripId)
-    try {
-      await deleteTrip(tripId)
-      toast.success('Trip deleted')
-      setTrips((prev) => prev.filter((trip) => trip.id !== tripId))
-    } catch (error) {
-      const message = error.response?.data?.error?.message || 'Unable to delete trip.'
-      toast.error(message)
-    } finally {
-      setDeletingId(null)
+  const handleDelete = (tripId) => {
+    const runDeletion = async () => {
+      setDeletingId(tripId)
+      try {
+        await deleteTrip(tripId)
+        setTrips((prev) => prev.filter((trip) => trip.id !== tripId))
+      } catch (error) {
+        const message = error.response?.data?.error?.message || 'Unable to delete trip.'
+        throw new Error(message)
+      } finally {
+        setDeletingId(null)
+      }
     }
+
+    confirmToast({
+      title: 'Delete this trip?',
+      description: 'This action cannot be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      tone: 'danger',
+      onConfirm: () =>
+        toast.promise(runDeletion(), {
+          loading: 'Deleting trip…',
+          success: 'Trip deleted',
+          error: (error) => error.message || 'Unable to delete trip.',
+        }),
+    })
   }
 
   const skeletonItems = useMemo(

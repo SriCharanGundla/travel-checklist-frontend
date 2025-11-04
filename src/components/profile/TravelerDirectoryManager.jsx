@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Input } from '../ui/input'
@@ -15,6 +15,7 @@ import { formatDate } from '../../utils/dateUtils'
 import { useTravelerDirectoryStore } from '../../stores/travelerDirectoryStore'
 import { shallow } from 'zustand/shallow'
 import { cn } from '../../lib/utils'
+import { confirmToast } from '../../lib/confirmToast'
 
 const emptyForm = {
   fullName: '',
@@ -142,21 +143,33 @@ export const TravelerDirectoryManager = () => {
     }
   }
 
-  const handleDelete = async (contact) => {
-    const confirmed = window.confirm(`Remove ${contact.fullName} from your directory?`)
-    if (!confirmed) return
-
-    try {
-      await removeContact(contact.id)
-      toast.success('Traveler removed from directory')
-      if (selectedContact?.id === contact.id) {
-        closeDialog()
+  const handleDelete = (contact) => {
+    const remove = async () => {
+      try {
+        await removeContact(contact.id)
+        if (selectedContact?.id === contact.id) {
+          closeDialog()
+        }
+      } catch (error) {
+        const message =
+          error.response?.data?.error?.message || 'Unable to remove traveler. Please try again.'
+        throw new Error(message)
       }
-    } catch (error) {
-      const message =
-        error.response?.data?.error?.message || 'Unable to remove traveler. Please try again.'
-      toast.error(message)
     }
+
+    confirmToast({
+      title: `Remove ${contact.fullName}?`,
+      description: 'This contact will be removed from your directory.',
+      confirmLabel: 'Remove',
+      cancelLabel: 'Cancel',
+      tone: 'danger',
+      onConfirm: () =>
+        toast.promise(remove(), {
+          loading: 'Removing traveler…',
+          success: 'Traveler removed from directory',
+          error: (error) => error.message || 'Unable to remove traveler. Please try again.',
+        }),
+    })
   }
 
   return (

@@ -2,7 +2,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import { Loader2, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/button'
@@ -76,8 +76,8 @@ const Register = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted px-6 py-12">
       <div className="w-full max-w-3xl">
-        <Card className="shadow-xl">
-          <CardHeader className="grid gap-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent sm:grid-cols-2">
+        <Card className="shadow-xl pt-0">
+          <CardHeader className="grid gap-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 py-6 sm:grid-cols-2">
             <div>
               <CardTitle className="text-2xl font-semibold text-foreground">Create your travel workspace</CardTitle>
               <CardDescription className="text-sm leading-relaxed">

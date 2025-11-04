@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import { Menu, X } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { Button, buttonVariants } from '../ui/button'

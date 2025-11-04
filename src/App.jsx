@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './contexts/AuthContext'
+import { Toaster } from '@/components/ui/sonner'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -27,7 +27,7 @@ function App() {
         <div className="fixed right-4 top-4 z-50 flex items-center">
           <ThemeToggle />
         </div>
-        <Toaster position="top-right" />
+        <Toaster />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />

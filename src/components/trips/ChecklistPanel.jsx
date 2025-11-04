@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
@@ -13,6 +13,7 @@ import { Checkbox } from '../ui/checkbox'
 import { Skeleton } from '../ui/skeleton'
 import { formatDate } from '../../utils/dateUtils'
 import { DatePicker } from '../ui/date-picker'
+import { confirmToast } from '../../lib/confirmToast'
 
 const PRIORITY_OPTIONS = [
   { value: 'low', label: 'Low', tone: 'bg-muted text-foreground' },
@@ -44,6 +45,7 @@ export const ChecklistPanel = ({
   travelers,
   isLoading,
   onCreateCategory,
+  onDeleteCategory,
   onCreateItem,
   onToggleItem,
   onDeleteItem,
@@ -124,15 +126,38 @@ export const ChecklistPanel = ({
     }
   }
 
-  const handleDeleteItem = async (item) => {
-    const confirmed = window.confirm(`Remove "${item.title}" from this checklist?`)
-    if (!confirmed) return
-    try {
-      await onDeleteItem(item.id)
-      toast.success('Checklist item removed')
-    } catch (error) {
-      toast.error('Unable to remove item. Please try again.')
-    }
+  const handleDeleteItem = (item) => {
+    confirmToast({
+      title: 'Remove checklist item?',
+      description: `Remove "${item.title}" from this checklist?`,
+      confirmLabel: 'Remove',
+      cancelLabel: 'Cancel',
+      tone: 'danger',
+      onConfirm: () =>
+        toast.promise(onDeleteItem(item.id), {
+          loading: 'Removing item…',
+          success: 'Checklist item removed',
+          error: 'Unable to remove item. Please try again.',
+        }),
+    })
+  }
+
+  const handleDeleteCategory = (category) => {
+    confirmToast({
+      title: `Delete ${category.name}?`,
+      description: 'All checklist items in this category will be removed.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      tone: 'danger',
+      onConfirm: () =>
+        toast.promise(onDeleteCategory(tripId, category.id), {
+          loading: 'Deleting category…',
+          success: 'Checklist category deleted',
+          error: (error) =>
+            error.response?.data?.error?.message ||
+            'Unable to delete category. Please try again.',
+        }),
+    })
   }
 
   return (
@@ -160,11 +185,23 @@ export const ChecklistPanel = ({
         <div className="grid gap-4 lg:grid-cols-2">
           {categories.map((category) => (
             <Card key={category.id} className="flex flex-col">
-              <CardHeader className="space-y-1">
-                <CardTitle>{category.name}</CardTitle>
-                {category.description && (
-                  <CardDescription>{category.description}</CardDescription>
-                )}
+              <CardHeader>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <CardTitle>{category.name}</CardTitle>
+                    {category.description && (
+                      <CardDescription>{category.description}</CardDescription>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => handleDeleteCategory(category)}
+                  >
+                    Delete
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col gap-4">
                 <div className="space-y-3">

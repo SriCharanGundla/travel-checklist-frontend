@@ -2,7 +2,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link } from 'react-router-dom'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import { Mail } from 'lucide-react'
 import authService from '../services/authService'
 import { Button } from '../components/ui/button'
@@ -40,8 +40,8 @@ const ForgotPassword = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted px-6 py-12">
       <div className="w-full max-w-md">
-        <Card className="overflow-hidden shadow-lg">
-          <CardHeader className="space-y-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
+        <Card className="overflow-hidden pt-0 shadow-lg">
+          <CardHeader className="space-y-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 py-6">
             <CardTitle className="text-2xl font-semibold text-foreground">Reset your password</CardTitle>
             <CardDescription className="text-sm">
               Enter the email address associated with your account. We&apos;ll send a link to create a new password.
@@ -86,4 +86,3 @@ const ForgotPassword = () => {
 }
 
 export default ForgotPassword
-
