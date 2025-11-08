@@ -5,7 +5,7 @@ import { Link as LinkIcon, Loader2 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
 import { Input } from '../ui/input'
 import { SensitiveInput } from '../ui/sensitiveInput'
 import { Label } from '../ui/label'
@@ -332,6 +332,9 @@ export const DocumentsPanel = ({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{selectedDocument ? 'Edit document' : 'Add document'}</DialogTitle>
+            <DialogDescription>
+              Store key travel paperwork details and keep attachments secure.
+            </DialogDescription>
           </DialogHeader>
 
           <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>

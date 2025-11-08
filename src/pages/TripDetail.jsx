@@ -32,6 +32,7 @@ import { useExpensesStore } from '../stores/expensesStore'
 import { shallow } from 'zustand/shallow'
 import { statusOptions, tripSchema, typeOptions } from '../utils/tripSchemas'
 import { DatePicker } from '../components/ui/date-picker'
+import { Select } from '../components/ui/select'
 import { confirmToast } from '../lib/confirmToast'
 
 const overviewFields = [

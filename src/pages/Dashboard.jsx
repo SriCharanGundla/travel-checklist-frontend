@@ -103,7 +103,7 @@ const Dashboard = () => {
   const statusSummary = useMemo(() => {
     if (!metrics?.statusBreakdown) return []
     return Object.entries(metrics.statusBreakdown)
-      .filter(([_, count]) => count > 0)
+      .filter(([, count]) => count > 0)
       .map(([status, count]) => ({
         status,
         count,

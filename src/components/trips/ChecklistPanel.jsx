@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
 import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
 import { Label } from '../ui/label'
@@ -268,6 +268,9 @@ export const ChecklistPanel = ({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create a checklist category</DialogTitle>
+            <DialogDescription>
+              Group related tasks together so your travel team can stay organized.
+            </DialogDescription>
           </DialogHeader>
           <form className="space-y-4" onSubmit={handleCategorySubmit(handleCreateCategory)}>
             <div className="grid gap-3">
@@ -304,6 +307,9 @@ export const ChecklistPanel = ({
         <DialogContent className="min-w-2xl">
           <DialogHeader>
             <DialogTitle>Add checklist item</DialogTitle>
+            <DialogDescription>
+              Capture a single task, deadline, and assignee for this category.
+            </DialogDescription>
           </DialogHeader>
           <form className="space-y-4" onSubmit={handleItemSubmit(handleCreateItem)}>
             <div className="grid gap-3">

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { Toaster } from '@/components/ui/sonner'
 import Home from './pages/Home'
@@ -17,39 +17,69 @@ import ProtectedRoute from './components/common/ProtectedRoute'
 import DashboardLayout from './components/layout/DashboardLayout'
 import ThemeToggle from './components/common/ThemeToggle'
 
+const RootLayout = () => (
+  <>
+    <a href="#main-content" className="skip-link">
+      Skip to main content
+    </a>
+    <div className="fixed right-4 top-4 z-50 flex items-center">
+      <ThemeToggle />
+    </div>
+    <Toaster />
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="min-h-screen bg-background text-foreground focus:outline-none"
+    >
+      <Outlet />
+    </main>
+  </>
+)
+
+const router = createBrowserRouter(
+  [
+    {
+      path: '/',
+      element: <RootLayout />,
+      children: [
+        { index: true, element: <Home /> },
+        { path: 'login', element: <Login /> },
+        { path: 'register', element: <Register /> },
+        { path: 'forgot-password', element: <ForgotPassword /> },
+        { path: 'reset-password', element: <ResetPassword /> },
+        { path: 'accept-invite', element: <AcceptInvite /> },
+        { path: 'shared/:token', element: <SharedTrip /> },
+        {
+          element: <ProtectedRoute />,
+          children: [
+            {
+              element: <DashboardLayout />,
+              children: [
+                { path: 'dashboard', element: <Dashboard /> },
+                { path: 'trips', element: <TripList /> },
+                { path: 'trips/new', element: <CreateTrip /> },
+                { path: 'trips/:tripId', element: <TripDetail /> },
+                { path: 'profile', element: <Profile /> },
+              ],
+            },
+          ],
+        },
+        { path: '*', element: <Navigate to="/" replace /> },
+      ],
+    },
+  ],
+  {
+    future: {
+      v7_startTransition: true,
+      v7_relativeSplatPath: true,
+    },
+  }
+)
+
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <a href="#main-content" className="skip-link">
-          Skip to main content
-        </a>
-        <div className="fixed right-4 top-4 z-50 flex items-center">
-          <ThemeToggle />
-        </div>
-        <Toaster />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/accept-invite" element={<AcceptInvite />} />
-          <Route path="/shared/:token" element={<SharedTrip />} />
-
-          <Route element={<ProtectedRoute />}>
-            <Route element={<DashboardLayout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/trips" element={<TripList />} />
-              <Route path="/trips/new" element={<CreateTrip />} />
-              <Route path="/trips/:tripId" element={<TripDetail />} />
-              <Route path="/profile" element={<Profile />} />
-            </Route>
-          </Route>
-
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+      <RouterProvider router={router} future={{ v7_startTransition: true, v7_relativeSplatPath: true }} />
     </AuthProvider>
   )
 }

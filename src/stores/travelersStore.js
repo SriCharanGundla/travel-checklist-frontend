@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import * as travelerService from '../services/travelerService'
 
-export const useTravelersStore = create((set, get) => ({
+export const useTravelersStore = create((set) => ({
   travelers: [],
   isLoading: false,
   error: null,
@@ -43,4 +43,3 @@ export const useTravelersStore = create((set, get) => ({
     }))
   },
 }))
-

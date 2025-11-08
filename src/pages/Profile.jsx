@@ -9,15 +9,19 @@ const Profile = () => {
   const location = useLocation()
   const directoryRef = useRef(null)
 
-  if (!user) {
-    return null
-  }
-
   useEffect(() => {
+    if (!user) {
+      return
+    }
+
     if (location.hash === '#travelers' && directoryRef.current) {
       directoryRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
-  }, [location.hash])
+  }, [user, location.hash])
+
+  if (!user) {
+    return null
+  }
 
   return (
     <div className="space-y-6">

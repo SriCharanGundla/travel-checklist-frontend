@@ -377,6 +377,9 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
             <DialogTitle>
               {selectedTraveler ? 'Edit traveler information' : 'Add a traveler'}
             </DialogTitle>
+            <DialogDescription>
+              Keep traveler profiles up to date so the team can access documents and contacts.
+            </DialogDescription>
           </DialogHeader>
 
           <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>

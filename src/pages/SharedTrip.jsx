@@ -131,8 +131,8 @@ const SharedTrip = () => {
   }, [shareLink?.trip?.budgetCurrency])
 
   const trip = shareLink?.trip
-  const itineraryItems = shareLink?.itinerary ?? []
-  const expenses = shareLink?.expenses?.items ?? []
+  const itineraryItems = shareLink?.itinerary
+  const expenses = shareLink?.expenses?.items
   const expenseSummary = shareLink?.expenses?.summary ?? {
     totalSpent: 0,
     budgetAmount: trip?.budgetAmount ?? 0,
@@ -148,11 +148,12 @@ const SharedTrip = () => {
   const canSubmitExpense = canContribute && allowedActions.includes('expense:add')
 
   const itineraryGroups = useMemo(() => {
-    if (!itineraryItems.length) {
+    const items = itineraryItems ?? []
+    if (!items.length) {
       return []
     }
 
-    const grouped = itineraryItems.reduce((acc, item) => {
+    const grouped = items.reduce((acc, item) => {
       const key = item.startTime ? new Date(item.startTime).toISOString().split('T')[0] : 'unscheduled'
       if (!acc[key]) {
         acc[key] = []
@@ -183,8 +184,9 @@ const SharedTrip = () => {
   }, [itineraryItems])
 
   const expenseItems = useMemo(() => {
-    if (!expenses.length) return []
-    return [...expenses].sort((a, b) => {
+    const items = expenses ?? []
+    if (!items.length) return []
+    return [...items].sort((a, b) => {
       const aTime = a.spentAt ? new Date(a.spentAt).getTime() : 0
       const bTime = b.spentAt ? new Date(b.spentAt).getTime() : 0
       return bTime - aTime

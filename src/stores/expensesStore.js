@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import * as expenseService from '../services/expenseService'
 
-export const useExpensesStore = create((set, get) => ({
+export const useExpensesStore = create((set) => ({
   expenses: [],
   isLoading: false,
   error: null,

@@ -35,7 +35,7 @@ const DashboardLayout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
       <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="relative mx-auto flex max-w-6xl flex-wrap items-center justify-between px-4 py-4">
           <div className="flex items-center gap-3 sm:gap-6">
@@ -85,10 +85,10 @@ const DashboardLayout = () => {
         </div>
       </header>
 
-      <main id="main-content" tabIndex="-1" className="mx-auto max-w-6xl px-4 py-8 focus:outline-none">
+      <div className="mx-auto max-w-6xl px-4 py-8">
         <Outlet />
-      </main>
-    </div>
+      </div>
+    </>
   )
 }
 

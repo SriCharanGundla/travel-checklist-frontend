@@ -61,7 +61,6 @@ const { success: toastSuccess, error: toastError } = toastMock
 const {
   getTripById: mockGetTripById,
   exportTripData: mockExportTripData,
-  deleteTrip: mockDeleteTrip,
 } = tripServiceMock
 const {
   downloadBlob: mockDownloadBlob,
