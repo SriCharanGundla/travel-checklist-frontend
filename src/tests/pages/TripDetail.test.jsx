@@ -175,6 +175,7 @@ const tripFixture = {
   notes: 'Confirm ryokan stay',
   startDate: '2025-11-10',
   endDate: '2025-11-18',
+  documentsModuleEnabled: false,
   permission: {
     level: 'admin',
   },
@@ -197,6 +198,9 @@ describe('TripDetail page', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    if (window.localStorage?.clear) {
+      window.localStorage.clear()
+    }
     navigateMock = vi.fn()
     ReactRouter.useNavigate.mockReturnValue(navigateMock)
     mockGetTripById.mockReset()
@@ -297,6 +301,50 @@ describe('TripDetail page', () => {
     expect(screen.getByText('Download export')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /edit trip/i })).toBeInTheDocument()
     expect(screen.getByText('Trip Snapshot')).toBeInTheDocument()
+  })
+
+  it('keeps documents optional until the module is enabled', async () => {
+    mockUpdateTrip.mockResolvedValueOnce({
+      ...tripFixture,
+      documentsModuleEnabled: true,
+    })
+
+    await renderTripDetail()
+
+    expect(screen.queryByRole('button', { name: /^documents$/i })).not.toBeInTheDocument()
+    const enableButton = screen.getByRole('button', { name: /enable travel documents/i })
+    fireEvent.click(enableButton)
+
+    await waitFor(() =>
+      expect(mockUpdateTrip).toHaveBeenCalledWith('trip-321', { documentsModuleEnabled: true })
+    )
+
+    await screen.findByRole('button', { name: /^documents$/i })
+  })
+
+  it('surfaces packing snapshot items on the overview tab', async () => {
+    mockChecklistStoreState.categories = [
+      {
+        id: 'cat-1',
+        name: 'Packing',
+        items: [
+          {
+            id: 'item-1',
+            title: 'Pack adapter',
+            priority: 'high',
+            completedAt: null,
+            dueDate: '2025-11-09',
+            assignee: { fullName: 'Jamie Rivera' },
+          },
+        ],
+      },
+    ]
+
+    await renderTripDetail()
+
+    expect(screen.getByText('What to pack next')).toBeInTheDocument()
+    expect(screen.getByText('Pack adapter')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /open checklist/i })).toBeInTheDocument()
   })
 
   it('updates trip details through the edit dialog', async () => {

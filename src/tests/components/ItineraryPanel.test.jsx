@@ -55,7 +55,7 @@ const makeBaseProps = () => ({
 })
 
 beforeAll(async () => {
-  ;({ ItineraryPanel } = await import('@/components/trips/ItineraryPanel'))
+  ({ ItineraryPanel } = await import('@/components/trips/ItineraryPanel'))
 })
 
 describe('ItineraryPanel', () => {

@@ -9,6 +9,7 @@ import { Label } from '../ui/label'
 import { Select } from '../ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
 import { Skeleton } from '../ui/skeleton'
+import { Switch } from '../ui/switch'
 import { formatDateTime, formatRelativeDate } from '../../utils/dateUtils'
 import { maskEmail } from '../../utils/privacy'
 import { DateTimePicker } from '../ui/date-picker'
@@ -19,6 +20,8 @@ const PERMISSION_LABELS = {
   edit: 'Editor',
   admin: 'Admin',
 }
+
+const REVOKED_LINK_RETENTION_MS = 7 * 24 * 60 * 60 * 1000
 
 const toIsoString = (value) => {
   if (!value) return undefined
@@ -78,6 +81,8 @@ export const CollaboratorsPanel = ({
   const [latestShareLink, setLatestShareLink] = useState(null)
   const [collaboratorFilter, setCollaboratorFilter] = useState('')
   const [shareLinkFilter, setShareLinkFilter] = useState('')
+  const [showArchivedShareLinks, setShowArchivedShareLinks] = useState(false)
+  const [dismissedShareLinkIds, setDismissedShareLinkIds] = useState(() => new Set())
 
   const canManageCollaborators = permission?.level === 'admin'
   const canEditTrip = permission?.level === 'admin' || permission?.level === 'edit'
@@ -123,6 +128,40 @@ export const CollaboratorsPanel = ({
     })
   }, [shareLinks, shareLinkFilter])
 
+  const visibleShareLinks = useMemo(() => {
+    if (!Array.isArray(filteredShareLinks) || !filteredShareLinks.length) {
+      return filteredShareLinks || []
+    }
+
+    const cutoff = Date.now() - REVOKED_LINK_RETENTION_MS
+
+    return filteredShareLinks.filter((link) => {
+      if (dismissedShareLinkIds.has(link.id)) {
+        return false
+      }
+      if (!link.revokedAt) {
+        return true
+      }
+      if (showArchivedShareLinks) {
+        return true
+      }
+      const revokedTime = new Date(link.revokedAt).getTime()
+      if (Number.isNaN(revokedTime)) {
+        return true
+      }
+      return revokedTime >= cutoff
+    })
+  }, [filteredShareLinks, dismissedShareLinkIds, showArchivedShareLinks])
+
+  const hiddenRevokedShareLinkCount = Math.max(
+    (filteredShareLinks?.length || 0) - (visibleShareLinks?.length || 0),
+    0
+  )
+
+  const shareLinkDisplayTotal = showArchivedShareLinks
+    ? filteredShareLinks?.length || 0
+    : visibleShareLinks?.length || 0
+
   const collaboratorMeta = collaboratorsMeta || {}
   const collaboratorPage = collaboratorMeta.page || 1
   const collaboratorLimit = collaboratorMeta.limit || 10
@@ -140,7 +179,7 @@ export const CollaboratorsPanel = ({
   const shareLinkLimit = shareLinkMeta.limit || 10
   const shareLinkTotal = shareLinkMeta.total ?? shareLinks?.length ?? 0
   const shareLinkStart = shareLinkTotal === 0 ? 0 : (shareLinkPage - 1) * shareLinkLimit + 1
-  const shareLinkPageCount = filteredShareLinks.length || 0
+  const shareLinkPageCount = visibleShareLinks.length || 0
   const shareLinkEnd = shareLinkPageCount > 0 ? shareLinkStart + shareLinkPageCount - 1 : shareLinkStart
   const shareLinkTotalPages = shareLinkMeta.totalPages || Math.max(Math.ceil(shareLinkTotal / shareLinkLimit), 1)
   const shareLinkPrevDisabled = shareLinksLoading || shareLinkPage <= 1 || !onFetchShareLinks
@@ -325,6 +364,15 @@ export const CollaboratorsPanel = ({
           error: (error) => error.message || 'Unable to revoke share link.',
         }),
     })
+  }
+
+  const handleDismissShareLink = (link) => {
+    setDismissedShareLinkIds((prev) => {
+      const next = new Set(prev)
+      next.add(link.id)
+      return next
+    })
+    toast.success('Share link removed from the list')
   }
 
   const copyToClipboard = async (value) => {
@@ -647,16 +695,28 @@ export const CollaboratorsPanel = ({
             </div>
           ) : shareLinks?.length ? (
             <>
-              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <Input
                   placeholder="Filter share links"
                   value={shareLinkFilter}
                   onChange={(event) => setShareLinkFilter(event.target.value)}
-                  className="sm:max-w-xs"
+                  className="lg:max-w-sm"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Showing {filteredShareLinks.length} of {shareLinks.length} link{shareLinks.length === 1 ? '' : 's'}
-                </p>
+                <div className="flex flex-col gap-2 lg:items-end">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Switch
+                      id="show-archived-links"
+                      checked={showArchivedShareLinks}
+                      onCheckedChange={setShowArchivedShareLinks}
+                    />
+                    <Label htmlFor="show-archived-links" className="text-xs text-muted-foreground">
+                      Show revoked links
+                    </Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Showing {visibleShareLinks.length} of {shareLinkDisplayTotal} link{shareLinkDisplayTotal === 1 ? '' : 's'}
+                  </p>
+                </div>
               </div>
 
               <Table>
@@ -670,7 +730,7 @@ export const CollaboratorsPanel = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredShareLinks.map((link) => (
+                  {visibleShareLinks.map((link) => (
                     <TableRow key={link.id}>
                       <TableCell>
                         <div className="flex flex-col">
@@ -712,24 +772,36 @@ export const CollaboratorsPanel = ({
                                 Copy
                               </Button>
                             )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive hover:bg-destructive/10"
-                              onClick={() => handleRevokeShareLink(link)}
-                              disabled={Boolean(link.revokedAt)}
-                            >
-                              Revoke
-                            </Button>
+                            {link.revokedAt ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-muted-foreground hover:bg-muted"
+                                onClick={() => handleDismissShareLink(link)}
+                              >
+                                Hide
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:bg-destructive/10"
+                                onClick={() => handleRevokeShareLink(link)}
+                              >
+                                Revoke
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       )}
                     </TableRow>
                   ))}
-                  {!filteredShareLinks.length && (
+                  {!visibleShareLinks.length && (
                     <TableRow>
                       <TableCell colSpan={canEditTrip ? 5 : 4} className="py-6 text-center text-sm text-muted-foreground">
-                        No share links match your filter.
+                        {hiddenRevokedShareLinkCount > 0 && !showArchivedShareLinks
+                          ? 'All matching share links are archived. Enable “Show revoked links” to review them.'
+                          : 'No share links match your filter.'}
                       </TableCell>
                     </TableRow>
                   )}

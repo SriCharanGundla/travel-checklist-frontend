@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { ChecklistPanel } from '@/components/trips/ChecklistPanel'
 
 const toastMock = vi.hoisted(() => {
@@ -120,16 +120,13 @@ describe('ChecklistPanel', () => {
     )
   })
 
-  it('adds an item to a category', async () => {
+  it('adds an item to a category with the quick form', async () => {
     const onCreateItem = vi.fn().mockResolvedValue(undefined)
 
     render(
       <ChecklistPanel
         {...baseProps}
-        travelers={[
-          { id: 'traveler-1', fullName: 'Jamie Rivera' },
-          { id: 'traveler-2', fullName: 'Alex Kim' },
-        ]}
+        travelers={[{ id: 'traveler-1', fullName: 'Jamie Rivera' }]}
         categories={[
           {
             id: 'cat-1',
@@ -142,11 +139,46 @@ describe('ChecklistPanel', () => {
       />
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /add item/i }))
+    const quickAddForm = screen.getByTestId('quick-add-form-cat-1')
 
-    fireEvent.change(screen.getByLabelText(/title/i), {
+    fireEvent.change(screen.getByTestId('quick-add-input-cat-1'), {
       target: { value: 'Book flights' },
     })
+    fireEvent.click(within(quickAddForm).getByRole('button', { name: /^add$/i }))
+
+    await waitFor(() =>
+      expect(onCreateItem).toHaveBeenCalledWith('cat-1', {
+        title: 'Book flights',
+        priority: 'medium',
+        dueDate: '',
+        assigneeTravelerId: '',
+        notes: '',
+      })
+    )
+    expect(toastMock.success).toHaveBeenCalledWith('Checklist item added')
+  })
+
+  it('allows adding metadata through the advanced drawer', async () => {
+    const onCreateItem = vi.fn().mockResolvedValue(undefined)
+
+    render(
+      <ChecklistPanel
+        {...baseProps}
+        travelers={[{ id: 'traveler-2', fullName: 'Alex Kim' }]}
+        categories={[
+          {
+            id: 'cat-1',
+            name: 'Travel prep',
+            description: '',
+            items: [],
+          },
+        ]}
+        onCreateItem={onCreateItem}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /add details/i }))
+
     fireEvent.change(screen.getByLabelText(/priority/i), {
       target: { value: 'high' },
     })
@@ -160,18 +192,52 @@ describe('ChecklistPanel', () => {
       target: { value: 'Use travel credits' },
     })
 
-    fireEvent.click(screen.getByRole('button', { name: /add to checklist/i }))
+    const quickAddForm = screen.getByTestId('quick-add-form-cat-1')
+
+    fireEvent.change(screen.getByTestId('quick-add-input-cat-1'), {
+      target: { value: 'Reserve seats' },
+    })
+    fireEvent.click(within(quickAddForm).getByRole('button', { name: /^add$/i }))
 
     await waitFor(() =>
       expect(onCreateItem).toHaveBeenCalledWith('cat-1', {
-        title: 'Book flights',
+        title: 'Reserve seats',
         priority: 'high',
         dueDate: '2025-12-01',
         assigneeTravelerId: 'traveler-2',
         notes: 'Use travel credits',
       })
     )
-    expect(toastMock.success).toHaveBeenCalledWith('Checklist item added')
+  })
+
+  it('filters tasks by traveler', () => {
+    render(
+      <ChecklistPanel
+        {...baseProps}
+        travelers={[
+          { id: 'traveler-1', fullName: 'Jamie Rivera' },
+          { id: 'traveler-2', fullName: 'Alex Kim' },
+        ]}
+        categories={[
+          {
+            id: 'cat-1',
+            name: 'Travel prep',
+            description: '',
+            items: [
+              { id: 'item-1', title: 'Book flights', priority: 'medium', completedAt: null, assigneeTravelerId: 'traveler-1', assignee: { fullName: 'Jamie Rivera' } },
+              { id: 'item-2', title: 'Renew passport', priority: 'high', completedAt: null, assigneeTravelerId: 'traveler-2', assignee: { fullName: 'Alex Kim' } },
+            ],
+          },
+        ]}
+      />
+    )
+
+    fireEvent.change(screen.getByLabelText(/show tasks for/i), {
+      target: { value: 'traveler-2' },
+    })
+
+    expect(screen.getByText('Renew passport')).toBeInTheDocument()
+    expect(screen.queryByText('Book flights')).not.toBeInTheDocument()
   })
 
   it('confirms before removing an item', async () => {
@@ -201,7 +267,8 @@ describe('ChecklistPanel', () => {
       />
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /remove/i }))
+    const categoryCard = screen.getByTestId('checklist-category-cat-1')
+    fireEvent.click(within(categoryCard).getByRole('button', { name: /remove/i }))
 
     await waitFor(() => expect(onDeleteItem).toHaveBeenCalledWith('item-1'))
     expect(confirmToastMock).toHaveBeenCalled()

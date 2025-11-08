@@ -66,7 +66,7 @@ const baseProps = {
 }
 
 beforeAll(async () => {
-  ;({ TravelersPanel } = await import('@/components/trips/TravelersPanel'))
+  ({ TravelersPanel } = await import('@/components/trips/TravelersPanel'))
 })
 
 describe('TravelersPanel', () => {

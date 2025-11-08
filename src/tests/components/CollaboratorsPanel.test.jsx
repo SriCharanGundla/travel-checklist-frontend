@@ -65,7 +65,7 @@ const makeBaseProps = () => ({
 })
 
 beforeAll(async () => {
-  ;({ CollaboratorsPanel } = await import('@/components/trips/CollaboratorsPanel'))
+  ({ CollaboratorsPanel } = await import('@/components/trips/CollaboratorsPanel'))
 })
 
 describe('CollaboratorsPanel', () => {

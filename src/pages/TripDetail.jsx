@@ -60,6 +60,13 @@ const exportFormatOptions = [
   { value: 'csv', label: 'CSV' },
 ]
 
+const checklistPriorityRank = {
+  critical: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+}
+
 const emptyTripFormValues = {
   name: '',
   destination: '',
@@ -106,6 +113,9 @@ const TripDetail = () => {
   const [exportFormat, setExportFormat] = useState('pdf')
   const [isExporting, setIsExporting] = useState(false)
   const [isEditDialogOpen, setEditDialogOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState('overview')
+  const [documentsModuleEnabled, setDocumentsModuleEnabled] = useState(false)
+  const [isEnablingDocumentsModule, setIsEnablingDocumentsModule] = useState(false)
 
   const {
     handleSubmit: handleTripUpdateSubmit,
@@ -178,6 +188,10 @@ const TripDetail = () => {
     }),
     shallow
   )
+
+  useEffect(() => {
+    setDocumentsModuleEnabled(Boolean(trip?.documentsModuleEnabled))
+  }, [trip?.documentsModuleEnabled])
 
   const {
     collaborators,
@@ -292,6 +306,7 @@ const TripDetail = () => {
         const data = await getTripById(tripId)
         if (!isActive) return
         setTrip(data)
+        setDocumentsModuleEnabled(Boolean(data?.documentsModuleEnabled))
       } catch (error) {
         if (!isActive) return
         const message = error.response?.data?.error?.message || 'Unable to load trip details.'
@@ -409,6 +424,37 @@ const TripDetail = () => {
   const renderTripFormError = (fieldError) =>
     fieldError ? <p className="mt-1 text-xs font-medium text-destructive">{fieldError.message}</p> : null
 
+  const handleEnableDocumentsModule = async () => {
+    if (!tripId) return
+
+    if (documentsModuleEnabled) {
+      setActiveTab('documents')
+      return
+    }
+
+    if (isEnablingDocumentsModule) {
+      return
+    }
+
+    setIsEnablingDocumentsModule(true)
+
+    try {
+      const updatedTrip = await updateTrip(tripId, {
+        documentsModuleEnabled: true,
+      })
+      setTrip(updatedTrip)
+      setDocumentsModuleEnabled(true)
+      setActiveTab('documents')
+      toast.success('Travel documents enabled')
+    } catch (error) {
+      const message =
+        error.response?.data?.error?.message || 'Unable to enable travel documents.'
+      toast.error(message)
+    } finally {
+      setIsEnablingDocumentsModule(false)
+    }
+  }
+
   const onSubmitTripUpdate = async (values) => {
     try {
       const payload = {
@@ -457,7 +503,55 @@ const TripDetail = () => {
     [documents]
   )
 
+  const pendingChecklistItems = useMemo(() => {
+    if (!categories?.length) return []
+    return categories.flatMap((category) =>
+      (category.items || [])
+        .filter((item) => !item.completedAt)
+        .map((item) => ({
+          ...item,
+          categoryName: category.name,
+        }))
+    )
+  }, [categories])
+
+  const prioritizedChecklistItems = useMemo(() => {
+    return pendingChecklistItems
+      .slice()
+      .sort((a, b) => {
+        if (a.dueDate && b.dueDate) {
+          const diff = new Date(a.dueDate) - new Date(b.dueDate)
+          if (diff !== 0) {
+            return diff
+          }
+        } else if (a.dueDate) {
+          return -1
+        } else if (b.dueDate) {
+          return 1
+        }
+
+        const priorityDiff =
+          (checklistPriorityRank[a.priority] ?? 99) -
+          (checklistPriorityRank[b.priority] ?? 99)
+        if (priorityDiff !== 0) {
+          return priorityDiff
+        }
+
+        return a.title.localeCompare(b.title)
+      })
+      .slice(0, 4)
+  }, [pendingChecklistItems])
+
+  const shouldShowDocumentsTab = documentsModuleEnabled || (documents?.length || 0) > 0
+
+  useEffect(() => {
+    if (!shouldShowDocumentsTab && activeTab === 'documents') {
+      setActiveTab('checklist')
+    }
+  }, [shouldShowDocumentsTab, activeTab])
+
   const canEditTripDetails = trip?.permission?.level === 'admin' || trip?.permission?.level === 'edit'
+  const canManageDocuments = canEditTripDetails
 
   if (isLoadingTrip) {
     return (
@@ -625,13 +719,13 @@ const TripDetail = () => {
         ))}
       </div>
 
-      <Tabs defaultValue="overview">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="-mx-4 overflow-x-auto pb-2 sm:mx-0">
           <TabsList className="bg-muted min-w-max sm:min-w-0">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="travelers">Travelers</TabsTrigger>
             <TabsTrigger value="checklist">Checklist</TabsTrigger>
-            <TabsTrigger value="documents">Documents</TabsTrigger>
+            {shouldShowDocumentsTab && <TabsTrigger value="documents">Documents</TabsTrigger>}
             <TabsTrigger value="collaborators">Collaborators</TabsTrigger>
             <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
@@ -642,32 +736,41 @@ const TripDetail = () => {
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Upcoming Tasks</CardTitle>
-                <CardDescription>Stay ahead with your top checklist items.</CardDescription>
+                <CardTitle>What to pack next</CardTitle>
+                <CardDescription>Instant snapshot of outstanding checklist items.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {categories
-                  .flatMap((category) => category.items || [])
-                  .filter((item) => !item.completedAt)
-                  .slice(0, 4)
-                  .map((item) => (
+                {prioritizedChecklistItems.length ? (
+                  prioritizedChecklistItems.map((item) => (
                     <div
                       key={item.id}
-                      className="flex flex-col rounded-lg border border-border p-3"
+                      className="flex flex-col gap-1 rounded-lg border border-border p-3"
                     >
                       <div className="flex items-center justify-between">
-                        <p className="font-medium text-foreground">{item.title}</p>
+                        <div>
+                          <p className="font-medium text-foreground">{item.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {item.categoryName}
+                            {item.dueDate && ` • Due ${formatDate(item.dueDate)}`}
+                          </p>
+                        </div>
                         <Badge className={priorityBadgeClass(item.priority)}>{item.priority}</Badge>
                       </div>
-                      <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
-                        {item.assignee && <span>Assigned to {item.assignee.fullName}</span>}
-                        {item.dueDate && <span>Due {formatDate(item.dueDate)}</span>}
-                      </div>
+                      {item.assignee && (
+                        <span className="text-xs text-muted-foreground">
+                          Assigned to {item.assignee.fullName}
+                        </span>
+                      )}
                     </div>
-                  ))}
-                {!categories.length && (
-                  <p className="text-sm text-muted-foreground">Add checklist items to see them here.</p>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    You’re packed! Add checklist items to surface them here.
+                  </p>
                 )}
+                <Button size="sm" variant="outline" onClick={() => setActiveTab('checklist')}>
+                  Open checklist
+                </Button>
               </CardContent>
             </Card>
 
@@ -699,8 +802,8 @@ const TripDetail = () => {
                   ))
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    No expiring documents detected. Add passports, visas, or insurance to enable
-                    alerts.
+                    No expiring documents detected. Enable the documents module to start tracking
+                    passports, visas, or insurance.
                   </p>
                 )}
               </CardContent>
@@ -720,30 +823,64 @@ const TripDetail = () => {
         </TabsContent>
 
         <TabsContent value="checklist">
-          <ChecklistPanel
-            tripId={tripId}
-            categories={categories}
-            travelers={travelers}
-            isLoading={checklistLoading}
-            onCreateCategory={createCategory}
-            onDeleteCategory={deleteCategory}
-            onCreateItem={createItem}
-            onToggleItem={toggleItemCompletion}
-            onDeleteItem={deleteItem}
-          />
+          <div className="space-y-4">
+            {canManageDocuments && !shouldShowDocumentsTab && (
+              <Card className="border-dashed border-primary/40 bg-primary/5">
+                <CardHeader>
+                  <CardTitle>Need secure document storage?</CardTitle>
+                  <CardDescription>
+                    Keep passports, visas, and insurance PDFs with the trip without slowing down
+                    checklist flows.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-sm text-muted-foreground">
+                    Enable the travel documents module whenever you’re ready.
+                  </p>
+                  <Button
+                    type="button"
+                    onClick={handleEnableDocumentsModule}
+                    disabled={isEnablingDocumentsModule}
+                  >
+                    {isEnablingDocumentsModule ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                        Enabling…
+                      </span>
+                    ) : (
+                      'Enable travel documents'
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            <ChecklistPanel
+              tripId={tripId}
+              categories={categories}
+              travelers={travelers}
+              isLoading={checklistLoading}
+              onCreateCategory={createCategory}
+              onDeleteCategory={deleteCategory}
+              onCreateItem={createItem}
+              onToggleItem={toggleItemCompletion}
+              onDeleteItem={deleteItem}
+            />
+          </div>
         </TabsContent>
 
-        <TabsContent value="documents">
-          <DocumentsPanel
-            tripId={tripId}
-            documents={documents}
-            travelers={travelers}
-            isLoading={documentsLoading}
-            onAdd={addDocument}
-            onUpdate={updateDocument}
-            onDelete={removeDocument}
-          />
-        </TabsContent>
+        {shouldShowDocumentsTab && (
+          <TabsContent value="documents">
+            <DocumentsPanel
+              tripId={tripId}
+              documents={documents}
+              travelers={travelers}
+              isLoading={documentsLoading}
+              onAdd={addDocument}
+              onUpdate={updateDocument}
+              onDelete={removeDocument}
+            />
+          </TabsContent>
+        )}
 
         <TabsContent value="collaborators">
           <CollaboratorsPanel
@@ -780,19 +917,19 @@ const TripDetail = () => {
           />
         </TabsContent>
 
-      <TabsContent value="expenses">
-        <ExpensesPanel
-          tripId={tripId}
-          expenses={expenses}
-          isLoading={expensesLoading}
-          permission={trip.permission}
-          currency={trip?.budgetCurrency}
-          onAdd={addExpense}
-          onUpdate={updateExpense}
-          onDelete={removeExpense}
-        />
-      </TabsContent>
-    </Tabs>
+        <TabsContent value="expenses">
+          <ExpensesPanel
+            tripId={tripId}
+            expenses={expenses}
+            isLoading={expensesLoading}
+            permission={trip.permission}
+            currency={trip?.budgetCurrency}
+            onAdd={addExpense}
+            onUpdate={updateExpense}
+            onDelete={removeExpense}
+          />
+        </TabsContent>
+      </Tabs>
 
       {canEditTripDetails && (
         <Dialog

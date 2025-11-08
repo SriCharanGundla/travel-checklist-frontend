@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
@@ -14,6 +14,7 @@ import { Skeleton } from '../ui/skeleton'
 import { formatDate } from '../../utils/dateUtils'
 import { DatePicker } from '../ui/date-picker'
 import { confirmToast } from '../../lib/confirmToast'
+import { cn } from '../../lib/utils'
 
 const PRIORITY_OPTIONS = [
   { value: 'low', label: 'Low', tone: 'bg-muted text-foreground' },
@@ -39,10 +40,27 @@ const priorityBadgeClass = (priority) =>
   PRIORITY_OPTIONS.find((option) => option.value === priority)?.tone ||
   'bg-muted text-foreground'
 
+const FILTER_OPTIONS = {
+  all: 'Everyone',
+  unassigned: 'Unassigned',
+}
+
+const getFilterLabel = (filter, travelers) => {
+  if (filter === 'all') {
+    return FILTER_OPTIONS.all
+  }
+
+  if (filter === 'unassigned') {
+    return FILTER_OPTIONS.unassigned
+  }
+
+  return travelers.find((traveler) => traveler.id === filter)?.fullName || FILTER_OPTIONS.all
+}
+
 export const ChecklistPanel = ({
   tripId,
-  categories,
-  travelers,
+  categories = [],
+  travelers = [],
   isLoading,
   onCreateCategory,
   onDeleteCategory,
@@ -51,8 +69,11 @@ export const ChecklistPanel = ({
   onDeleteItem,
 }) => {
   const [isCategoryDialogOpen, setCategoryDialogOpen] = useState(false)
-  const [activeCategoryId, setActiveCategoryId] = useState(null)
-  const [isItemDialogOpen, setItemDialogOpen] = useState(false)
+  const [assigneeFilter, setAssigneeFilter] = useState('all')
+  const [itemDrafts, setItemDrafts] = useState({})
+  const [pendingItems, setPendingItems] = useState({})
+  const [advancedOpen, setAdvancedOpen] = useState({})
+  const [expandedItems, setExpandedItems] = useState({})
 
   const {
     register: registerCategory,
@@ -61,35 +82,15 @@ export const ChecklistPanel = ({
     formState: categoryFormState,
   } = useForm({ defaultValues: categoryFormDefaults })
 
-  const {
-    register: registerItem,
-    handleSubmit: handleItemSubmit,
-    reset: resetItemForm,
-    control: itemControl,
-    formState: itemFormState,
-  } = useForm({ defaultValues: itemFormDefaults })
-
   useEffect(() => {
-    if (!isItemDialogOpen) {
-      resetItemForm({
-        ...itemFormDefaults,
-        assigneeTravelerId: travelers?.[0]?.id || '',
-      })
+    if (!isCategoryDialogOpen) {
+      resetCategoryForm(categoryFormDefaults)
     }
-  }, [isItemDialogOpen, resetItemForm, travelers])
+  }, [isCategoryDialogOpen, resetCategoryForm])
 
   const openCategoryDialog = () => {
     resetCategoryForm(categoryFormDefaults)
     setCategoryDialogOpen(true)
-  }
-
-  const openItemDialog = (categoryId) => {
-    setActiveCategoryId(categoryId)
-    resetItemForm({
-      ...itemFormDefaults,
-      assigneeTravelerId: travelers?.[0]?.id || '',
-    })
-    setItemDialogOpen(true)
   }
 
   const handleCreateCategory = async (values) => {
@@ -105,16 +106,69 @@ export const ChecklistPanel = ({
     }
   }
 
-  const handleCreateItem = async (values) => {
-    if (!activeCategoryId) return
+  const getDraftForCategory = (categoryId) => {
+    return itemDrafts[categoryId] || itemFormDefaults
+  }
+
+  const updateDraftField = (categoryId, field, value) => {
+    setItemDrafts((prev) => {
+      const current = prev[categoryId] || itemFormDefaults
+      return {
+        ...prev,
+        [categoryId]: {
+          ...current,
+          [field]: value,
+        },
+      }
+    })
+  }
+
+  const resetDraft = (categoryId) => {
+    setItemDrafts((prev) => ({
+      ...prev,
+      [categoryId]: { ...itemFormDefaults },
+    }))
+  }
+
+  const toggleAdvanced = (categoryId) => {
+    setAdvancedOpen((prev) => ({
+      ...prev,
+      [categoryId]: !prev[categoryId],
+    }))
+  }
+
+  const toggleItemDetails = (itemId) => {
+    setExpandedItems((prev) => ({
+      ...prev,
+      [itemId]: !prev[itemId],
+    }))
+  }
+
+  const handleQuickAdd = async (event, categoryId) => {
+    event.preventDefault()
+    const draft = getDraftForCategory(categoryId)
+    const title = draft.title.trim()
+
+    if (!title) {
+      toast.error('Add a short label for this checklist item.')
+      return
+    }
+
+    setPendingItems((prev) => ({ ...prev, [categoryId]: true }))
+
     try {
-      await onCreateItem(activeCategoryId, values)
+      await onCreateItem(categoryId, {
+        ...draft,
+        title,
+      })
       toast.success('Checklist item added')
-      setItemDialogOpen(false)
+      resetDraft(categoryId)
     } catch (error) {
       const message =
         error.response?.data?.error?.message || 'Unable to create item. Please try again.'
       toast.error(message)
+    } finally {
+      setPendingItems((prev) => ({ ...prev, [categoryId]: false }))
     }
   }
 
@@ -160,6 +214,103 @@ export const ChecklistPanel = ({
     })
   }
 
+  const matchesFilter = useCallback((item) => {
+    if (assigneeFilter === 'all') return true
+    if (assigneeFilter === 'unassigned') {
+      return !item.assigneeTravelerId
+    }
+    return item.assigneeTravelerId === assigneeFilter
+  }, [assigneeFilter])
+
+  const filterLabel = useMemo(
+    () => getFilterLabel(assigneeFilter, travelers),
+    [assigneeFilter, travelers]
+  )
+
+  const filteredCategories = useMemo(() => {
+    return (categories || []).map((category) => ({
+      ...category,
+      items: (category.items || []).filter(matchesFilter),
+    }))
+  }, [categories, matchesFilter])
+
+  const renderItemDetails = (item) => {
+    const isExpanded = expandedItems[item.id]
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-2 sm:flex-nowrap">
+          <div className="flex flex-1 items-center gap-3">
+            <Checkbox
+              className="mt-0.5"
+              checked={Boolean(item.completedAt)}
+              onCheckedChange={() => handleToggleComplete(item)}
+            />
+            <div className="flex-1 space-y-1">
+              <p
+                className={cn('font-medium text-foreground leading-tight', {
+                  'text-muted-foreground line-through': item.completedAt,
+                })}
+              >
+                {item.title}
+              </p>
+              {!isExpanded && (
+                <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                  <Badge className={cn('capitalize', priorityBadgeClass(item.priority))}>
+                    {item.priority}
+                  </Badge>
+                  {item.assignee && <span>{item.assignee.fullName}</span>}
+                  {item.dueDate && <span>Due {formatDate(item.dueDate)}</span>}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => toggleItemDetails(item.id)}
+            >
+              {isExpanded ? 'Hide details' : 'Details'}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={() => handleDeleteItem(item)}
+            >
+              Remove
+            </Button>
+          </div>
+        </div>
+        {isExpanded && (
+          <div className="rounded-lg border border-dashed border-border/70 bg-muted/40 p-3 text-sm text-muted-foreground">
+            <div className="flex flex-wrap gap-3 text-xs uppercase tracking-wide">
+              <span className="flex items-center gap-1">
+                Priority:
+                <Badge className={cn('capitalize', priorityBadgeClass(item.priority))}>
+                  {item.priority}
+                </Badge>
+              </span>
+              <span>
+                Owner:
+                {' '}
+                {item.assignee?.fullName || 'Anyone'}
+              </span>
+              <span>
+                Due:
+                {' '}
+                {item.dueDate ? formatDate(item.dueDate) : 'Flexible'}
+              </span>
+            </div>
+            {item.notes && <p className="mt-2 text-sm text-muted-foreground">{item.notes}</p>}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <section className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -169,9 +320,29 @@ export const ChecklistPanel = ({
             Track pre-trip tasks, packing, documents, and health requirements.
           </p>
         </div>
-        <Button variant="outline" onClick={openCategoryDialog}>
-          New Category
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Label htmlFor="assigneeFilter" className="text-xs uppercase tracking-wide">
+              Show tasks for
+            </Label>
+            <Select
+              id="assigneeFilter"
+              value={assigneeFilter}
+              onValueChange={setAssigneeFilter}
+            >
+              <option value="all">Everyone</option>
+              <option value="unassigned">Unassigned</option>
+              {travelers.map((traveler) => (
+                <option key={traveler.id} value={traveler.id}>
+                  {traveler.fullName}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <Button variant="outline" onClick={openCategoryDialog}>
+            New Category
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -181,77 +352,148 @@ export const ChecklistPanel = ({
           <Skeleton className="h-40 rounded-xl" />
           <Skeleton className="h-40 rounded-xl" />
         </div>
-      ) : categories?.length ? (
+      ) : filteredCategories?.length ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          {categories.map((category) => (
-            <Card key={category.id} className="flex flex-col">
-              <CardHeader>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <CardTitle>{category.name}</CardTitle>
-                    {category.description && (
-                      <CardDescription>{category.description}</CardDescription>
-                    )}
+          {filteredCategories.map((category) => {
+            const draft = getDraftForCategory(category.id)
+            const isPending = pendingItems[category.id]
+            const showAdvanced = advancedOpen[category.id]
+            const hasItems = category.items?.length
+
+            return (
+              <Card key={category.id} data-testid={`checklist-category-${category.id}`} className="flex flex-col">
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <CardTitle>{category.name}</CardTitle>
+                      {category.description && (
+                        <CardDescription>{category.description}</CardDescription>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => handleDeleteCategory(category)}
+                    >
+                      Delete
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => handleDeleteCategory(category)}
+                </CardHeader>
+                <CardContent className="flex flex-1 flex-col gap-4">
+                  <form
+                    data-testid={`quick-add-form-${category.id}`}
+                    className="rounded-lg border border-dashed border-border p-3"
+                    onSubmit={(event) => handleQuickAdd(event, category.id)}
                   >
-                    Delete
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="flex flex-1 flex-col gap-4">
-                <div className="space-y-3">
-                  {category.items?.length ? (
-                    category.items.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-start justify-between rounded-lg border border-border p-3"
+                    <Label htmlFor={`quick-add-${category.id}`} className="sr-only">
+                      Add an item to {category.name}
+                    </Label>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Input
+                        id={`quick-add-${category.id}`}
+                        data-testid={`quick-add-input-${category.id}`}
+                        placeholder="Add item"
+                        value={draft.title}
+                        onChange={(event) => updateDraftField(category.id, 'title', event.target.value)}
+                      />
+                      <Button type="submit" disabled={isPending}>
+                        {isPending ? 'Saving…' : 'Add'}
+                      </Button>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Keep it simple. Add details only when needed.</span>
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        className="px-0 text-xs"
+                        onClick={() => toggleAdvanced(category.id)}
                       >
-                        <div className="flex gap-3">
-                          <Checkbox
-                            checked={Boolean(item.completedAt)}
-                            onCheckedChange={() => handleToggleComplete(item)}
-                          />
-                          <div>
-                            <p className="font-medium text-foreground">{item.title}</p>
-                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                              <Badge className={priorityBadgeClass(item.priority)}>
-                                {item.priority}
-                              </Badge>
-                              {item.assignee && (
-                                <span>Assigned to {item.assignee.fullName}</span>
-                              )}
-                              {item.dueDate && <span>Due {formatDate(item.dueDate)}</span>}
-                            </div>
-                            {item.notes && (
-                              <p className="mt-2 text-sm text-muted-foreground">{item.notes}</p>
-                            )}
+                        {showAdvanced ? 'Hide advanced' : 'Add details'}
+                      </Button>
+                    </div>
+                    {showAdvanced && (
+                      <div className="mt-3 space-y-3">
+                        <div className="grid gap-3 sm:grid-cols-3">
+                          <div className="grid gap-2">
+                            <Label htmlFor={`priority-${category.id}`}>Priority</Label>
+                            <Select
+                              id={`priority-${category.id}`}
+                              value={draft.priority}
+                              onValueChange={(value) => updateDraftField(category.id, 'priority', value)}
+                            >
+                              {PRIORITY_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </Select>
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor={`due-${category.id}`}>Due date</Label>
+                            <DatePicker
+                              id={`due-${category.id}`}
+                              value={draft.dueDate}
+                              onChange={(value) => updateDraftField(category.id, 'dueDate', value)}
+                              placeholder="Select due date"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor={`assignee-${category.id}`}>Assignee</Label>
+                            <Select
+                              id={`assignee-${category.id}`}
+                              value={draft.assigneeTravelerId}
+                              onValueChange={(value) => updateDraftField(category.id, 'assigneeTravelerId', value)}
+                            >
+                              <option value="">Anyone</option>
+                              {travelers.map((traveler) => (
+                                <option key={traveler.id} value={traveler.id}>
+                                  {traveler.fullName}
+                                </option>
+                              ))}
+                            </Select>
                           </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteItem(item)}
-                        >
-                          Remove
-                        </Button>
+                        <div className="grid gap-2">
+                          <Label htmlFor={`notes-${category.id}`}>Notes</Label>
+                          <Textarea
+                            id={`notes-${category.id}`}
+                            rows={3}
+                            placeholder="Add helpful instructions or links"
+                            value={draft.notes}
+                            onChange={(event) => updateDraftField(category.id, 'notes', event.target.value)}
+                          />
+                        </div>
                       </div>
-                    ))
-                  ) : (
-                    <div className="rounded-lg border border-dashed border-border p-6 text-center">
-                      <p className="text-sm text-muted-foreground">No checklist items yet.</p>
-                    </div>
-                  )}
-                </div>
-                <Button onClick={() => openItemDialog(category.id)}>Add Item</Button>
-              </CardContent>
-            </Card>
-          ))}
+                    )}
+                  </form>
+
+                  <div className="space-y-3">
+                    {hasItems ? (
+                      category.items.map((item) => (
+                        <div
+                          key={item.id}
+                          className="rounded-lg border border-border p-3"
+                        >
+                          {renderItemDetails(item)}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-border p-6 text-center">
+                        <p className="text-sm text-muted-foreground">
+                          {assigneeFilter === 'all'
+                            ? 'No checklist items yet.'
+                            : `No tasks for ${filterLabel} in this category.`}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       ) : (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-muted p-10 text-center">
@@ -297,113 +539,6 @@ export const ChecklistPanel = ({
               </Button>
               <Button type="submit" disabled={categoryFormState.isSubmitting}>
                 Create category
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isItemDialogOpen} onOpenChange={setItemDialogOpen}>
-        <DialogContent className="min-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Add checklist item</DialogTitle>
-            <DialogDescription>
-              Capture a single task, deadline, and assignee for this category.
-            </DialogDescription>
-          </DialogHeader>
-          <form className="space-y-4" onSubmit={handleItemSubmit(handleCreateItem)}>
-            <div className="grid gap-3">
-              <Label htmlFor="itemTitle">Title</Label>
-              <Input
-                id="itemTitle"
-                placeholder="Book flights, renew passport…"
-                {...registerItem('title')}
-                required
-              />
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="grid gap-2">
-                <Label htmlFor="itemPriority">Priority</Label>
-                <Controller
-                  name="priority"
-                  control={itemControl}
-                  rules={{ required: true }}
-                  render={({ field }) => (
-                    <Select
-                      id="itemPriority"
-                      name={field.name}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      onBlur={field.onBlur}
-                      required
-                    >
-                      {PRIORITY_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </Select>
-                  )}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="itemDueDate">Due date</Label>
-                <Controller
-                  control={itemControl}
-                  name="dueDate"
-                  render={({ field }) => (
-                    <DatePicker
-                      id="itemDueDate"
-                      value={field.value}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      placeholder="Select due date"
-                    />
-                  )}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="itemAssignee">Assignee</Label>
-                <Controller
-                  name="assigneeTravelerId"
-                  control={itemControl}
-                  render={({ field }) => (
-                    <Select
-                      id="itemAssignee"
-                      name={field.name}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      onBlur={field.onBlur}
-                    >
-                      <option value="">Unassigned</option>
-                      {travelers.map((traveler) => (
-                        <option key={traveler.id} value={traveler.id}>
-                          {traveler.fullName}
-                        </option>
-                      ))}
-                    </Select>
-                  )}
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-3">
-              <Label htmlFor="itemNotes">Notes</Label>
-              <Textarea
-                id="itemNotes"
-                rows={3}
-                placeholder="Add helpful instructions or links"
-                {...registerItem('notes')}
-              />
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setItemDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={itemFormState.isSubmitting}>
-                Add to checklist
               </Button>
             </DialogFooter>
           </form>
