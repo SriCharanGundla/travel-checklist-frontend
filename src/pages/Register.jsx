@@ -76,7 +76,7 @@ const Register = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted px-6 py-12">
       <div className="w-full max-w-3xl">
-        <Card className="shadow-xl pt-0">
+        <Card className="overflow-hidden pt-0 shadow-xl">
           <CardHeader className="grid gap-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 py-6 sm:grid-cols-2">
             <div>
               <CardTitle className="text-2xl font-semibold text-foreground">Create your travel workspace</CardTitle>
@@ -85,7 +85,7 @@ const Register = () => {
               </CardDescription>
             </div>
             <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-card/70 p-4 text-sm text-muted-foreground">
-              <ShieldCheck className="mt-1 h-5 w-5 text-primary" aria-hidden="true" />
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
               <div>
                 <p className="font-semibold text-foreground">Security-first foundation</p>
                 <p>

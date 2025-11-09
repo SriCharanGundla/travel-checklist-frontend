@@ -16,13 +16,15 @@ import ResetPassword from './pages/ResetPassword'
 import ProtectedRoute from './components/common/ProtectedRoute'
 import DashboardLayout from './components/layout/DashboardLayout'
 import ThemeToggle from './components/common/ThemeToggle'
+import MotionToggle from './components/common/MotionToggle'
 
 const RootLayout = () => (
   <>
     <a href="#main-content" className="skip-link">
       Skip to main content
     </a>
-    <div className="fixed right-4 top-4 z-50 flex items-center">
+    <div className="fixed right-4 top-4 z-50 flex items-center gap-2">
+      <MotionToggle />
       <ThemeToggle />
     </div>
     <Toaster />

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { motion } from 'motion/react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -20,6 +21,7 @@ import { DocumentsPanel } from '../components/trips/DocumentsPanel'
 import { CollaboratorsPanel } from '../components/trips/CollaboratorsPanel'
 import { ItineraryPanel } from '../components/trips/ItineraryPanel'
 import { ExpensesPanel } from '../components/trips/ExpensesPanel'
+import { TripOverviewInsights } from '@/components/trips/TripOverviewInsights'
 import { getTripById, deleteTrip, exportTripData, updateTrip } from '../services/tripService'
 import { formatDateRange, formatDate } from '../utils/dateUtils'
 import { downloadBlob, extractFilename } from '../utils/download'
@@ -34,6 +36,7 @@ import { statusOptions, tripSchema, typeOptions } from '../utils/tripSchemas'
 import { DatePicker } from '../components/ui/date-picker'
 import { Select } from '../components/ui/select'
 import { confirmToast } from '../lib/confirmToast'
+import { panelVariants, createStaggeredContainer } from '@/lib/animation'
 
 const overviewFields = [
   { label: 'Destination', key: 'destination', fallback: 'Add destination' },
@@ -103,6 +106,8 @@ const tripToFormValues = (data) => {
     notes: data.notes || '',
   }
 }
+
+const overviewGridVariants = createStaggeredContainer(0.12)
 
 const TripDetail = () => {
   const { tripId } = useParams()
@@ -569,7 +574,12 @@ const TripDetail = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <motion.div
+        className="flex flex-wrap items-center justify-between gap-3"
+        initial="hidden"
+        animate="visible"
+        variants={panelVariants}
+      >
         <div>
           <h1 className="text-2xl font-semibold text-foreground">{trip.name}</h1>
           <p className="text-sm text-muted-foreground">{formatDateRange(trip.startDate, trip.endDate)}</p>
@@ -592,9 +602,10 @@ const TripDetail = () => {
             Delete trip
           </Button>
         </div>
-      </div>
+      </motion.div>
 
-      <Card aria-labelledby="trip-export-title">
+      <motion.section initial="hidden" animate="visible" variants={panelVariants}>
+        <Card aria-labelledby="trip-export-title">
         <CardHeader className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <CardTitle id="trip-export-title" className="text-lg font-semibold text-foreground">
@@ -665,14 +676,21 @@ const TripDetail = () => {
           </div>
         </CardContent>
       </Card>
+    </motion.section>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="md:col-span-4">
-          <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-            <div>
-              <CardTitle className="text-lg font-semibold text-foreground">Trip Snapshot</CardTitle>
-              <CardDescription>
-                {overviewFields
+      <motion.div
+        className="grid gap-4 md:grid-cols-4"
+        initial="hidden"
+        animate="visible"
+        variants={overviewGridVariants}
+      >
+        <motion.div variants={panelVariants} className="md:col-span-4">
+          <Card className="h-full">
+            <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div>
+                <CardTitle className="text-lg font-semibold text-foreground">Trip Snapshot</CardTitle>
+                <CardDescription>
+                  {overviewFields
                   .filter((field) => ['destination', 'type', 'status'].includes(field.key))
                   .map((field) => {
                     const value = trip[field.key]
@@ -694,30 +712,33 @@ const TripDetail = () => {
               </Badge>
             </div>
           </CardHeader>
-        </Card>
+          </Card>
+        </motion.div>
 
         {overviewFields.map(({ label, key, transform, fallback }) => (
-          <Card key={key}>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                {label}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <p className="text-base text-foreground">
-                {transform
-                  ? transform(trip[key], trip) || fallback
-                  : trip[key] || fallback || 'Not provided'}
-              </p>
-              {key === 'startDate' && trip.endDate && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {formatDate(trip.startDate)} → {formatDate(trip.endDate)}
+          <motion.div key={key} variants={panelVariants}>
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  {label}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <p className="text-base text-foreground">
+                  {transform
+                    ? transform(trip[key], trip) || fallback
+                    : trip[key] || fallback || 'Not provided'}
                 </p>
-              )}
-            </CardContent>
-          </Card>
+                {key === 'startDate' && trip.endDate && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {formatDate(trip.startDate)} → {formatDate(trip.endDate)}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="-mx-4 overflow-x-auto pb-2 sm:mx-0">
@@ -733,82 +754,15 @@ const TripDetail = () => {
         </div>
 
         <TabsContent value="overview">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>What to pack next</CardTitle>
-                <CardDescription>Instant snapshot of outstanding checklist items.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {prioritizedChecklistItems.length ? (
-                  prioritizedChecklistItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex flex-col gap-1 rounded-lg border border-border p-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-foreground">{item.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {item.categoryName}
-                            {item.dueDate && ` • Due ${formatDate(item.dueDate)}`}
-                          </p>
-                        </div>
-                        <Badge className={priorityBadgeClass(item.priority)}>{item.priority}</Badge>
-                      </div>
-                      {item.assignee && (
-                        <span className="text-xs text-muted-foreground">
-                          Assigned to {item.assignee.fullName}
-                        </span>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    You’re packed! Add checklist items to surface them here.
-                  </p>
-                )}
-                <Button size="sm" variant="outline" onClick={() => setActiveTab('checklist')}>
-                  Open checklist
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Expiring Documents</CardTitle>
-                <CardDescription>
-                  Keep an eye on key documents that need attention.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {expiringDocuments.length ? (
-                  expiringDocuments.map((document) => (
-                    <div
-                      key={document.id}
-                      className="flex items-center justify-between rounded-lg border border-warning/40 bg-warning/15 p-3 text-warning"
-                    >
-                      <div>
-                        <p className="font-medium capitalize">{document.type}</p>
-                        <p className="text-sm">
-                          {document.traveler?.fullName || 'Unknown traveler'} ·{' '}
-                          {formatDate(document.expiryDate)}
-                        </p>
-                      </div>
-                      <Badge className="bg-warning/15 text-warning">
-                        {document.status.replace('_', ' ')}
-                      </Badge>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    No expiring documents detected. Enable the documents module to start tracking
-                    passports, visas, or insurance.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+          <TripOverviewInsights
+            prioritizedChecklistItems={prioritizedChecklistItems}
+            expiringDocuments={expiringDocuments}
+            documentsModuleEnabled={documentsModuleEnabled}
+            isEnablingDocumentsModule={isEnablingDocumentsModule}
+            onOpenChecklist={() => setActiveTab('checklist')}
+            onEnableDocumentsModule={handleEnableDocumentsModule}
+            priorityBadgeClass={priorityBadgeClass}
+          />
         </TabsContent>
 
         <TabsContent value="travelers">

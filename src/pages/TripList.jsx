@@ -2,15 +2,17 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { CalendarRange, Loader2, MapPin, Trash2 } from 'lucide-react'
-import { getTrips, deleteTrip } from '../services/tripService'
-import { formatDateRange } from '../utils/dateUtils'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
-import { Button, buttonVariants } from '../components/ui/button'
-import { Badge } from '../components/ui/badge'
-import { Skeleton } from '../components/ui/skeleton'
-import { EmptyState } from '../components/common/EmptyState'
-import { cn } from '../lib/utils'
-import { confirmToast } from '../lib/confirmToast'
+import { getTrips, deleteTrip } from '@/services/tripService'
+import { formatDateRange } from '@/utils/dateUtils'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/common/EmptyState'
+import { cn } from '@/lib/utils'
+import { confirmToast } from '@/lib/confirmToast'
+import { useAutoAnimateList } from '@/hooks/useAutoAnimateList'
+import { useAnimationSettings } from '@/contexts/AnimationSettingsContext.jsx'
 
 const statusVariantMap = {
   planning: 'info',
@@ -32,6 +34,9 @@ const TripList = () => {
   const [trips, setTrips] = useState([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState(null)
+  const { prefersReducedMotion } = useAnimationSettings()
+  // Smoothly animate inserts/removals when trips load or delete (respects reduced-motion preference).
+  const [tripListRef] = useAutoAnimateList(prefersReducedMotion ? { duration: 0 } : undefined)
 
   const loadTrips = async () => {
     setLoading(true)
@@ -127,7 +132,7 @@ const TripList = () => {
               }
             />
           ) : (
-            <ul className="divide-y divide-border">
+            <ul ref={tripListRef} className="divide-y divide-border">
               {trips.map((trip) => (
                 <li key={trip.id} className="flex flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between">
                   <div className="space-y-1">

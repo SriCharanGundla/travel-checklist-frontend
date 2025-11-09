@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
-import { useAuth } from '../contexts/AuthContext'
-import dashboardService from '../services/dashboardService'
-import { Button } from '../components/ui/button'
+import { motion } from 'motion/react'
+import { animated } from '@react-spring/web'
+import { useAuth } from '@/contexts/AuthContext'
+import { useAnimationSettings } from '@/contexts/AnimationSettingsContext.jsx'
+import dashboardService from '@/services/dashboardService'
+import { Button } from '@/components/ui/button'
+import { useAnimatedNumber } from '@/hooks/useAnimatedNumber'
+import { useAutoAnimateList } from '@/hooks/useAutoAnimateList'
+import { panelVariants, createStaggeredContainer, listItemVariants } from '@/lib/animation'
 
 const formatNumber = (value) => {
   if (value === null || value === undefined) {
@@ -12,13 +18,16 @@ const formatNumber = (value) => {
   return Number(value).toLocaleString()
 }
 
+const kpiContainerVariants = createStaggeredContainer(0.12)
+const statusListContainerVariants = createStaggeredContainer(0.08)
+
 const NextTripDetails = ({ trip }) => {
   if (!trip) {
     return (
-      <div className="rounded-xl bg-card p-5 shadow-sm">
+      <motion.article variants={panelVariants} className="rounded-xl bg-card p-5 shadow-sm">
         <h2 className="text-lg font-semibold text-foreground">Next Trip</h2>
         <p className="mt-2 text-sm text-muted-foreground">Add start dates to your trips to see countdowns and destinations here.</p>
-      </div>
+      </motion.article>
     )
   }
 
@@ -27,7 +36,7 @@ const NextTripDetails = ({ trip }) => {
   const destinationLabel = trip.destination || 'Destination TBA'
 
   return (
-    <div className="rounded-xl bg-card p-5 shadow-sm">
+    <motion.article variants={panelVariants} className="rounded-xl bg-card p-5 shadow-sm">
       <h2 className="text-lg font-semibold text-foreground">Next Trip</h2>
       <div className="mt-3 space-y-2 text-sm text-foreground">
         <p className="text-base font-semibold text-foreground">{trip.name}</p>
@@ -42,35 +51,47 @@ const NextTripDetails = ({ trip }) => {
             : `${trip.daysUntil} day${trip.daysUntil === 1 ? '' : 's'} to go`}
         </p>
       </div>
-    </div>
+    </motion.article>
   )
 }
 
 const TasksPlaceholder = ({ tasks }) => (
-  <div className="rounded-xl bg-card p-5 shadow-sm">
+  <motion.article variants={panelVariants} className="rounded-xl bg-card p-5 shadow-sm">
     <h2 className="text-lg font-semibold text-foreground">Tasks Due Soon</h2>
-    <p className="mt-4 text-3xl font-semibold text-primary">{formatNumber(tasks?.dueSoonCount ?? 0)}</p>
+    <AnimatedMetric value={tasks?.dueSoonCount ?? 0} className="mt-4 text-3xl font-semibold text-primary" />
     <p className="mt-2 text-sm text-muted-foreground">
       {tasks?.placeholder
         ? tasks.message || 'Checklist tasks are coming online with the Phase 2 release.'
         : 'Tasks due within the next 7 days.'}
     </p>
-  </div>
+  </motion.article>
 )
 
 const KpiCard = ({ label, value, sublabel }) => (
-  <div className="rounded-xl bg-card p-5 shadow-sm">
+  <motion.article variants={panelVariants} className="rounded-xl bg-card p-5 shadow-sm">
     <p className="text-sm font-medium text-muted-foreground">{label}</p>
-    <p className="mt-2 text-3xl font-semibold text-foreground">{formatNumber(value)}</p>
+    <AnimatedMetric value={value} className="mt-2 text-3xl font-semibold text-foreground" />
     {sublabel ? <p className="mt-1 text-xs text-muted-foreground">{sublabel}</p> : null}
-  </div>
+  </motion.article>
 )
+
+const AnimatedMetric = ({ value, className }) => {
+  const animatedValue = useAnimatedNumber(value ?? 0, { preset: 'gentle' })
+  return (
+    <animated.p className={className}>
+      {animatedValue.to((val) => formatNumber(Math.round(val)))}
+    </animated.p>
+  )
+}
 
 const Dashboard = () => {
   const { user } = useAuth()
+  const { prefersReducedMotion } = useAnimationSettings()
   const [metrics, setMetrics] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  // Auto-animate the status list as trips change while honoring reduced-motion preferences.
+  const [statusListRef] = useAutoAnimateList(prefersReducedMotion ? { duration: 0 } : undefined)
 
   useEffect(() => {
     let isMounted = true
@@ -112,7 +133,12 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8">
-      <header className="rounded-xl bg-card p-6 shadow-sm">
+      <motion.header
+        className="rounded-xl bg-card p-6 shadow-sm"
+        initial="hidden"
+        animate="visible"
+        variants={panelVariants}
+      >
         <h1 className="text-2xl font-semibold text-foreground">Welcome, {user?.firstName || 'Traveler'}!</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Track upcoming trips, see recent changes, and jump into your checklists.
@@ -125,7 +151,7 @@ const Dashboard = () => {
             <Link to="/trips">View All Trips</Link>
           </Button>
         </div>
-      </header>
+      </motion.header>
 
       {loading ? (
         <div className="rounded-xl border border-dashed border-border bg-card/50 p-6 text-sm text-muted-foreground">
@@ -135,35 +161,60 @@ const Dashboard = () => {
         <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-6 text-sm text-destructive">{error}</div>
       ) : (
         <>
-          <section className="grid gap-6 md:grid-cols-3">
+          <motion.section
+            className="grid gap-6 md:grid-cols-3"
+            initial="hidden"
+            animate="visible"
+            variants={kpiContainerVariants}
+          >
             <KpiCard label="Upcoming Trips" value={metrics?.totals?.upcomingTripCount} />
             <KpiCard label="Trips In Progress" value={metrics?.totals?.activeTripCount} />
             <KpiCard label="All Trips" value={metrics?.totals?.totalTrips} />
-          </section>
+          </motion.section>
 
-          <section className="grid gap-6 md:grid-cols-2">
+          <motion.section
+            className="grid gap-6 md:grid-cols-2"
+            initial="hidden"
+            animate="visible"
+            variants={kpiContainerVariants}
+          >
             <NextTripDetails trip={metrics?.nextTrip} />
             <TasksPlaceholder tasks={metrics?.tasks} />
-          </section>
+          </motion.section>
 
-          <section className="rounded-xl bg-card p-5 shadow-sm">
+          <motion.section
+            className="rounded-xl bg-card p-5 shadow-sm"
+            initial="hidden"
+            animate="visible"
+            variants={panelVariants}
+          >
             <h2 className="text-lg font-semibold text-foreground">Status Breakdown</h2>
             {statusSummary.length === 0 ? (
               <p className="mt-2 text-sm text-muted-foreground">Create trips and update their status to see insights here.</p>
             ) : (
-              <ul className="mt-3 grid gap-2 text-sm text-foreground md:grid-cols-2">
+              <motion.ul
+                ref={statusListRef}
+                className="mt-3 grid gap-2 text-sm text-foreground md:grid-cols-2"
+                variants={statusListContainerVariants}
+                initial="hidden"
+                animate="visible"
+              >
                 {statusSummary.map(({ status, count }) => (
-                  <li key={status} className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
+                  <motion.li
+                    key={status}
+                    className="flex items-center justify-between rounded-lg bg-muted px-3 py-2"
+                    variants={listItemVariants}
+                  >
                     <span className="capitalize text-muted-foreground">{status}</span>
                     <span className="font-semibold text-foreground">{formatNumber(count)}</span>
-                  </li>
+                  </motion.li>
                 ))}
-              </ul>
+              </motion.ul>
             )}
             <p className="mt-4 text-xs text-muted-foreground">
               Updated {metrics?.generatedAt ? format(new Date(metrics.generatedAt), 'MMM d, yyyy h:mm a') : 'recently'}
             </p>
-          </section>
+          </motion.section>
         </>
       )}
     </div>
