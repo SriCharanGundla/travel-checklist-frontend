@@ -15,6 +15,8 @@ import { formatDate } from '../../utils/dateUtils'
 import { DatePicker } from '../ui/date-picker'
 import { confirmToast } from '../../lib/confirmToast'
 import { cn } from '../../lib/utils'
+import { GestureHint } from '@/components/common/GestureHint.jsx'
+import { useGestureHint } from '@/hooks/useGestureHint.js'
 
 const PRIORITY_OPTIONS = [
   { value: 'low', label: 'Low', tone: 'bg-muted text-foreground' },
@@ -74,6 +76,9 @@ export const ChecklistPanel = ({
   const [pendingItems, setPendingItems] = useState({})
   const [advancedOpen, setAdvancedOpen] = useState({})
   const [expandedItems, setExpandedItems] = useState({})
+  const { visible: checklistHintVisible, acknowledge: acknowledgeChecklistHint } = useGestureHint('checklist-advanced-drawer', {
+    autoHideMs: 9000,
+  })
 
   const {
     register: registerCategory,
@@ -135,6 +140,7 @@ export const ChecklistPanel = ({
       ...prev,
       [categoryId]: !prev[categoryId],
     }))
+    acknowledgeChecklistHint()
   }
 
   const toggleItemDetails = (itemId) => {
@@ -354,11 +360,13 @@ export const ChecklistPanel = ({
         </div>
       ) : filteredCategories?.length ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          {filteredCategories.map((category) => {
+          {filteredCategories.map((category, index) => {
             const draft = getDraftForCategory(category.id)
             const isPending = pendingItems[category.id]
             const showAdvanced = advancedOpen[category.id]
             const hasItems = category.items?.length
+            const showGestureHint =
+              checklistHintVisible && !showAdvanced && index === 0 && travelers.length > 0
 
             return (
               <Card key={category.id} data-testid={`checklist-category-${category.id}`} className="flex flex-col">
@@ -404,15 +412,24 @@ export const ChecklistPanel = ({
                     </div>
                     <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
                       <span>Keep it simple. Add details only when needed.</span>
-                      <Button
-                        type="button"
-                        variant="link"
-                        size="sm"
-                        className="px-0 text-xs"
-                        onClick={() => toggleAdvanced(category.id)}
-                      >
-                        {showAdvanced ? 'Hide advanced' : 'Add details'}
-                      </Button>
+                      <div className="relative inline-flex items-center">
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          className="px-0 text-xs"
+                          onClick={() => toggleAdvanced(category.id)}
+                          onPointerDown={acknowledgeChecklistHint}
+                        >
+                          {showAdvanced ? 'Hide advanced' : 'Add details'}
+                        </Button>
+                        <GestureHint
+                          visible={showGestureHint}
+                          icon="↕"
+                          message="Swipe up for more fields"
+                          className="absolute left-1/2 -top-8 -translate-x-1/2"
+                        />
+                      </div>
                     </div>
                     {showAdvanced && (
                       <div className="mt-3 space-y-3">

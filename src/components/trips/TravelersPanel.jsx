@@ -18,6 +18,8 @@ import { maskEmail } from '../../utils/privacy'
 import { useTravelerDirectoryStore } from '../../stores/travelerDirectoryStore'
 import { shallow } from 'zustand/shallow'
 import { confirmToast } from '../../lib/confirmToast'
+import { GestureHint } from '@/components/common/GestureHint.jsx'
+import { useGestureHint } from '@/hooks/useGestureHint.js'
 
 const emptyForm = {
   fullName: '',
@@ -53,6 +55,9 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
   const [isDirectoryOpen, setDirectoryOpen] = useState(false)
   const [directoryFilter, setDirectoryFilter] = useState('')
   const navigate = useNavigate()
+  const { visible: directoryHintVisible, acknowledge: acknowledgeDirectoryHint } = useGestureHint('traveler-directory-sheet', {
+    autoHideMs: 8000,
+  })
 
   const { register, handleSubmit, reset, control, formState } = useForm({ defaultValues: emptyForm })
 
@@ -148,6 +153,7 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
 
   const handleOpenDirectory = () => {
     setDirectoryOpen(true)
+    acknowledgeDirectoryHint()
   }
 
   const handleCloseDirectory = () => {
@@ -504,7 +510,11 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
           }
         }}
       >
-        <DialogContent className="max-w-3xl">
+        <DialogContent
+          className="max-w-3xl"
+          onPointerDown={acknowledgeDirectoryHint}
+          onTouchStart={acknowledgeDirectoryHint}
+        >
           <DialogHeader>
             <DialogTitle>Browse saved travelers</DialogTitle>
             <DialogDescription>
@@ -523,6 +533,12 @@ export const TravelersPanel = ({ tripId, travelers, isLoading, onAdd, onUpdate, 
               <Button type="button" variant="ghost" onClick={handleManageDirectory}>
                 Manage directory
               </Button>
+              <GestureHint
+                visible={directoryHintVisible}
+                icon="↕"
+                message="Swipe down to close"
+                className="sm:absolute sm:right-6 sm:top-4"
+              />
             </div>
 
             {directoryLoading && !directoryLoaded ? (

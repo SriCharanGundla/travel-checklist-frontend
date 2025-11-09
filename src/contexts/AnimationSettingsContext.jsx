@@ -6,6 +6,8 @@ const AnimationSettingsContext = createContext({
   resumeLenis: () => {},
   userMotionPreference: 'system',
   setReducedMotionPreference: () => {},
+  enableHapticHints: false,
+  setEnableHapticHints: () => {},
 })
 
 export function useAnimationSettings() {

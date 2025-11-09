@@ -13,22 +13,8 @@ import { cn } from '@/lib/utils'
 import { confirmToast } from '@/lib/confirmToast'
 import { useAutoAnimateList } from '@/hooks/useAutoAnimateList'
 import { useAnimationSettings } from '@/contexts/AnimationSettingsContext.jsx'
-
-const statusVariantMap = {
-  planning: 'info',
-  confirmed: 'success',
-  ongoing: 'warning',
-  completed: 'default',
-  cancelled: 'danger',
-}
-
-const statusLabelMap = {
-  planning: 'Planning',
-  confirmed: 'Confirmed',
-  ongoing: 'In Progress',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-}
+import TripStoryline from '@/components/trips/TripStoryline'
+import { tripStatusVariantMap, tripStatusLabelMap } from '@/constants/tripStatus'
 
 const TripList = () => {
   const [trips, setTrips] = useState([])
@@ -113,6 +99,8 @@ const TripList = () => {
         </div>
       </div>
 
+      <TripStoryline trips={trips} isLoading={loading} />
+
       <Card>
         <CardHeader className="px-6 pb-0">
           <CardTitle className="text-lg">Upcoming adventures</CardTitle>
@@ -154,8 +142,8 @@ const TripList = () => {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <Badge variant={statusVariantMap[trip.status] || 'default'}>
-                      {statusLabelMap[trip.status] || trip.status}
+                    <Badge variant={tripStatusVariantMap[trip.status] || 'default'}>
+                      {tripStatusLabelMap[trip.status] || trip.status}
                     </Badge>
 
                     <Link

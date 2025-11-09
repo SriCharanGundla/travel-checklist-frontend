@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { LayoutGroup, motion } from 'motion/react'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Link as LinkIcon, Loader2 } from 'lucide-react'
@@ -17,6 +18,7 @@ import SensitiveValue from '../ui/sensitiveValue'
 import documentService from '../../services/documentService'
 import { DatePicker } from '../ui/date-picker'
 import { confirmToast } from '../../lib/confirmToast'
+import { useAnimationSettings } from '@/contexts/AnimationSettingsContext.jsx'
 
 const DOCUMENT_TYPES = [
   { value: 'passport', label: 'Passport' },
@@ -65,9 +67,11 @@ export const DocumentsPanel = ({
   onUpdate,
   onDelete,
 }) => {
+  const { prefersReducedMotion } = useAnimationSettings()
   const [isDialogOpen, setDialogOpen] = useState(false)
   const [selectedDocument, setSelectedDocument] = useState(null)
   const [vaultLinkLoadingId, setVaultLinkLoadingId] = useState(null)
+  const lastFocusRef = useRef(null)
 
   const { register, handleSubmit, reset, watch, control, formState } = useForm({
     defaultValues: emptyForm,
@@ -101,14 +105,27 @@ export const DocumentsPanel = ({
   const closeDialog = () => {
     setDialogOpen(false)
     setSelectedDocument(null)
+    if (lastFocusRef.current && typeof lastFocusRef.current.focus === 'function') {
+      lastFocusRef.current.focus()
+    }
+    lastFocusRef.current = null
   }
 
-  const handleCreate = () => {
+  const enableMorphs = !prefersReducedMotion
+  const getLayoutId = (segment, id) => (enableMorphs && id ? `document-${segment}-${id}` : undefined)
+
+  const handleCreate = (triggerEl) => {
+    if (triggerEl) {
+      lastFocusRef.current = triggerEl
+    }
     setSelectedDocument(null)
     setDialogOpen(true)
   }
 
-  const handleEdit = (document) => {
+  const handleEdit = (document, triggerEl) => {
+    if (triggerEl) {
+      lastFocusRef.current = triggerEl
+    }
     setSelectedDocument(document)
     setDialogOpen(true)
   }
@@ -204,7 +221,8 @@ export const DocumentsPanel = ({
   }
 
   return (
-    <section className="space-y-5">
+    <LayoutGroup id={`documents-layout-${tripId || 'default'}`}>
+      <section className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Documents</h2>
@@ -212,7 +230,7 @@ export const DocumentsPanel = ({
             Track passports, visas, insurance, and other critical paperwork.
           </p>
         </div>
-        <Button onClick={handleCreate} disabled={!travelers?.length}>
+        <Button onClick={(event) => handleCreate(event.currentTarget)} disabled={!travelers?.length}>
           Add Document
         </Button>
       </div>
@@ -246,20 +264,32 @@ export const DocumentsPanel = ({
             </TableHeader>
             <TableBody>
               {documents.map((document) => (
-                <TableRow key={document.id}>
-                  <TableCell className="capitalize">{document.type}</TableCell>
-                  <TableCell>{document.traveler?.fullName || 'Unknown traveler'}</TableCell>
+                <motion.tr
+                  key={document.id}
+                  layoutId={getLayoutId('row', document.id)}
+                  className="border-b transition-colors hover:bg-muted/50"
+                >
+                  <TableCell className="capitalize">
+                    <motion.span layoutId={getLayoutId('type', document.id)} className="font-medium text-foreground">
+                      {document.type}
+                    </motion.span>
+                  </TableCell>
                   <TableCell>
-                    <div className="flex flex-col text-sm text-foreground">
+                    <motion.span layoutId={getLayoutId('traveler', document.id)}>
+                      {document.traveler?.fullName || 'Unknown traveler'}
+                    </motion.span>
+                  </TableCell>
+                  <TableCell>
+                    <motion.div layoutId={getLayoutId('identifier', document.id)} className="flex flex-col text-sm text-foreground">
                       <SensitiveValue value={document.identifier} />
                       {document.issuingCountry && (
                         <span className="text-xs text-muted-foreground">{document.issuingCountry}</span>
                       )}
-                    </div>
+                    </motion.div>
                   </TableCell>
                   <TableCell>
                     {document.hasVaultFile ? (
-                      <div className="flex flex-col gap-2">
+                      <motion.div layoutId={getLayoutId('attachment', document.id)} className="flex flex-col gap-2">
                         <span className="text-xs text-muted-foreground">
                           {document.vaultFileName || 'Secure attachment'}
                         </span>
@@ -283,7 +313,7 @@ export const DocumentsPanel = ({
                             </>
                           )}
                         </Button>
-                      </div>
+                      </motion.div>
                     ) : (
                       <span className="text-xs text-muted-foreground">No file stored</span>
                     )}
@@ -291,13 +321,15 @@ export const DocumentsPanel = ({
                   <TableCell>{formatDate(document.issuedDate)}</TableCell>
                   <TableCell>{renderExpiryBadge(document)}</TableCell>
                   <TableCell>
-                    <Badge className={statusBadgeStyles[document.status] || 'bg-muted text-muted-foreground'}>
-                      {document.status.replace('_', ' ')}
-                    </Badge>
+                    <motion.div layoutId={getLayoutId('status', document.id)}>
+                      <Badge className={statusBadgeStyles[document.status] || 'bg-muted text-muted-foreground'}>
+                        {document.status.replace('_', ' ')}
+                      </Badge>
+                    </motion.div>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleEdit(document)}>
+                      <Button variant="outline" size="sm" onClick={(event) => handleEdit(document, event.currentTarget)}>
                         Edit
                       </Button>
                       <Button
@@ -310,7 +342,7 @@ export const DocumentsPanel = ({
                       </Button>
                     </div>
                   </TableCell>
-                </TableRow>
+                </motion.tr>
               ))}
             </TableBody>
           </Table>
@@ -330,6 +362,44 @@ export const DocumentsPanel = ({
 
       <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
+          {enableMorphs && selectedDocument ? (
+            <motion.div
+              layoutId={getLayoutId('row', selectedDocument.id)}
+              className="rounded-xl border border-border/60 bg-muted/60 p-4 shadow-inner"
+            >
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                <motion.div
+                  layoutId={getLayoutId('type', selectedDocument.id)}
+                  className="text-lg font-semibold capitalize text-foreground"
+                >
+                  {selectedDocument.type}
+                </motion.div>
+                <motion.div
+                  layoutId={getLayoutId('traveler', selectedDocument.id)}
+                  className="text-muted-foreground"
+                >
+                  {selectedDocument.traveler?.fullName || 'Unknown traveler'}
+                </motion.div>
+                <motion.div
+                  layoutId={getLayoutId('status', selectedDocument.id)}
+                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                >
+                  {selectedDocument.status.replace('_', ' ')}
+                </motion.div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                <motion.div layoutId={getLayoutId('identifier', selectedDocument.id)} className="flex items-center gap-2">
+                  <span className="font-medium text-foreground">{selectedDocument.identifier || 'No identifier'}</span>
+                  {selectedDocument.issuingCountry && <span>{selectedDocument.issuingCountry}</span>}
+                </motion.div>
+                {selectedDocument.hasVaultFile ? (
+                  <motion.span layoutId={getLayoutId('attachment', selectedDocument.id)}>
+                    {selectedDocument.vaultFileName || 'Secure attachment stored'}
+                  </motion.span>
+                ) : null}
+              </div>
+            </motion.div>
+          ) : null}
           <DialogHeader>
             <DialogTitle>{selectedDocument ? 'Edit document' : 'Add document'}</DialogTitle>
             <DialogDescription>
@@ -512,6 +582,7 @@ export const DocumentsPanel = ({
         </DialogContent>
       </Dialog>
     </section>
+    </LayoutGroup>
   )
 }
 

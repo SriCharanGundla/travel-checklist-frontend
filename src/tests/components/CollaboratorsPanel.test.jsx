@@ -1,5 +1,6 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { CollaboratorsPanel } from '@/components/trips/CollaboratorsPanel'
 
 const toastMock = vi.hoisted(() => {
   const promise = vi.fn((maybePromise) => maybePromise)
@@ -43,7 +44,9 @@ vi.mock('@/components/ui/select', () => ({
   ),
 }))
 
-let CollaboratorsPanel
+vi.mock('@/contexts/AnimationSettingsContext.jsx', () => ({
+  useAnimationSettings: () => ({ prefersReducedMotion: false }),
+}))
 
 const makeBaseProps = () => ({
   tripId: 'trip-1',
@@ -62,10 +65,6 @@ const makeBaseProps = () => ({
   onRevokeShareLink: vi.fn(),
   onFetchCollaborators: vi.fn(),
   onFetchShareLinks: vi.fn(),
-})
-
-beforeAll(async () => {
-  ({ CollaboratorsPanel } = await import('@/components/trips/CollaboratorsPanel'))
 })
 
 describe('CollaboratorsPanel', () => {

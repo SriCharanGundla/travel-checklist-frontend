@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'motion/react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -37,6 +37,9 @@ import { DatePicker } from '../components/ui/date-picker'
 import { Select } from '../components/ui/select'
 import { confirmToast } from '../lib/confirmToast'
 import { panelVariants, createStaggeredContainer } from '@/lib/animation'
+import { AutomationIndicator } from '@/components/common/AutomationIndicator.jsx'
+import { GestureHint } from '@/components/common/GestureHint.jsx'
+import { useGestureHint } from '@/hooks/useGestureHint.js'
 
 const overviewFields = [
   { label: 'Destination', key: 'destination', fallback: 'Add destination' },
@@ -121,6 +124,8 @@ const TripDetail = () => {
   const [activeTab, setActiveTab] = useState('overview')
   const [documentsModuleEnabled, setDocumentsModuleEnabled] = useState(false)
   const [isEnablingDocumentsModule, setIsEnablingDocumentsModule] = useState(false)
+  const tabsContainerRef = useRef(null)
+  const { visible: tabsHintVisible, acknowledge: acknowledgeTabsHint } = useGestureHint('trip-tabs-swipe')
 
   const {
     handleSubmit: handleTripUpdateSubmit,
@@ -197,6 +202,17 @@ const TripDetail = () => {
   useEffect(() => {
     setDocumentsModuleEnabled(Boolean(trip?.documentsModuleEnabled))
   }, [trip?.documentsModuleEnabled])
+
+  const handleTabInteraction = () => {
+    if (tabsHintVisible) {
+      acknowledgeTabsHint()
+    }
+  }
+
+  const handleTabChange = (value) => {
+    setActiveTab(value)
+    acknowledgeTabsHint()
+  }
 
   const {
     collaborators,
@@ -549,6 +565,19 @@ const TripDetail = () => {
 
   const shouldShowDocumentsTab = documentsModuleEnabled || (documents?.length || 0) > 0
 
+  const insightsSyncing = checklistLoading || documentsLoading || travelersLoading
+  const insightsStatus = insightsSyncing ? 'syncing' : 'success'
+  const insightsLabel = insightsSyncing ? 'Refreshing insights…' : 'Insights up to date'
+
+  const workspaceSyncing =
+    travelersLoading ||
+    checklistLoading ||
+    documentsLoading ||
+    collaboratorsLoading ||
+    shareLinksLoading ||
+    itineraryLoading ||
+    expensesLoading
+
   useEffect(() => {
     if (!shouldShowDocumentsTab && activeTab === 'documents') {
       setActiveTab('checklist')
@@ -606,7 +635,7 @@ const TripDetail = () => {
 
       <motion.section initial="hidden" animate="visible" variants={panelVariants}>
         <Card aria-labelledby="trip-export-title">
-        <CardHeader className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+        <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <CardTitle id="trip-export-title" className="text-lg font-semibold text-foreground">
               Export data
@@ -615,9 +644,14 @@ const TripDetail = () => {
               Download printable summaries or spreadsheets for trip planning and reporting.
             </CardDescription>
           </div>
-          <p className="text-sm text-muted-foreground lg:text-right">
-            Choose what to export, then download a fresh snapshot at any time.
-          </p>
+          <div className="flex flex-col items-start gap-2 text-sm text-muted-foreground lg:items-end">
+            <p>Choose what to export, then download a fresh snapshot at any time.</p>
+            <AutomationIndicator
+              status={isExporting ? 'syncing' : 'idle'}
+              label={isExporting ? 'Generating export…' : 'Exports ready'}
+              tone="info"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -664,14 +698,7 @@ const TripDetail = () => {
               className="sm:w-auto"
               aria-busy={isExporting}
             >
-              {isExporting ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                  Generating…
-                </span>
-              ) : (
-                'Download export'
-              )}
+              {isExporting ? 'Generating…' : 'Download export'}
             </Button>
           </div>
         </CardContent>
@@ -700,7 +727,7 @@ const TripDetail = () => {
                   .join(' · ')}
               </CardDescription>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline">
                 {travelers.length} traveler{travelers.length === 1 ? '' : 's'}
               </Badge>
@@ -710,6 +737,11 @@ const TripDetail = () => {
               <Badge variant="outline">
                 {documents.length} document{documents.length === 1 ? '' : 's'}
               </Badge>
+              <AutomationIndicator
+                status={workspaceSyncing ? 'syncing' : 'success'}
+                label={workspaceSyncing ? 'Syncing trip data…' : 'Trip data up to date'}
+                tone="info"
+              />
             </div>
           </CardHeader>
           </Card>
@@ -740,8 +772,14 @@ const TripDetail = () => {
         ))}
       </motion.div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="-mx-4 overflow-x-auto pb-2 sm:mx-0">
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
+        <div
+          ref={tabsContainerRef}
+          className="relative -mx-4 overflow-x-auto pb-2 sm:mx-0"
+          onScroll={handleTabInteraction}
+          onPointerDown={handleTabInteraction}
+          onTouchStart={handleTabInteraction}
+        >
           <TabsList className="bg-muted min-w-max sm:min-w-0">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="travelers">Travelers</TabsTrigger>
@@ -751,6 +789,12 @@ const TripDetail = () => {
             <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
           </TabsList>
+          <GestureHint
+            visible={tabsHintVisible}
+            icon="↔"
+            message="Swipe to explore sections"
+            className="absolute right-4 top-0 -translate-y-full"
+          />
         </div>
 
         <TabsContent value="overview">
@@ -762,6 +806,8 @@ const TripDetail = () => {
             onOpenChecklist={() => setActiveTab('checklist')}
             onEnableDocumentsModule={handleEnableDocumentsModule}
             priorityBadgeClass={priorityBadgeClass}
+            insightsStatus={insightsStatus}
+            insightsLabel={insightsLabel}
           />
         </TabsContent>
 
@@ -788,22 +834,20 @@ const TripDetail = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm text-muted-foreground">
-                    Enable the travel documents module whenever you’re ready.
-                  </p>
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <p>Enable the travel documents module whenever you’re ready.</p>
+                    <AutomationIndicator
+                      status={isEnablingDocumentsModule ? 'syncing' : 'idle'}
+                      label={isEnablingDocumentsModule ? 'Enabling documents…' : 'Documents module disabled'}
+                      tone="primary"
+                    />
+                  </div>
                   <Button
                     type="button"
                     onClick={handleEnableDocumentsModule}
                     disabled={isEnablingDocumentsModule}
                   >
-                    {isEnablingDocumentsModule ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                        Enabling…
-                      </span>
-                    ) : (
-                      'Enable travel documents'
-                    )}
+                    {isEnablingDocumentsModule ? 'Enabling…' : 'Enable travel documents'}
                   </Button>
                 </CardContent>
               </Card>

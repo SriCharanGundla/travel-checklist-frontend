@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useAnimationSettings } from '@/contexts/AnimationSettingsContext.jsx'
 import dashboardService from '@/services/dashboardService'
 import { Button } from '@/components/ui/button'
+import { AutomationIndicator } from '@/components/common/AutomationIndicator.jsx'
 import { useAnimatedNumber } from '@/hooks/useAnimatedNumber'
 import { useAutoAnimateList } from '@/hooks/useAutoAnimateList'
 import { panelVariants, createStaggeredContainer, listItemVariants } from '@/lib/animation'
@@ -155,7 +156,10 @@ const Dashboard = () => {
 
       {loading ? (
         <div className="rounded-xl border border-dashed border-border bg-card/50 p-6 text-sm text-muted-foreground">
-          Loading your dashboard metrics…
+          <div className="flex items-center gap-3">
+            <AutomationIndicator status="syncing" label="Syncing dashboard…" />
+            <span>Loading your dashboard metrics…</span>
+          </div>
         </div>
       ) : error ? (
         <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-6 text-sm text-destructive">{error}</div>
@@ -188,7 +192,14 @@ const Dashboard = () => {
             animate="visible"
             variants={panelVariants}
           >
-            <h2 className="text-lg font-semibold text-foreground">Status Breakdown</h2>
+            <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+              <h2 className="text-lg font-semibold text-foreground">Status Breakdown</h2>
+              <AutomationIndicator
+                status={loading ? 'syncing' : error ? 'error' : 'success'}
+                label={loading ? 'Syncing trips…' : error ? 'Failed to sync' : 'Updated'}
+                tone={error ? 'warning' : 'primary'}
+              />
+            </div>
             {statusSummary.length === 0 ? (
               <p className="mt-2 text-sm text-muted-foreground">Create trips and update their status to see insights here.</p>
             ) : (

@@ -47,6 +47,10 @@ vi.mock('@/components/ui/date-picker', () => ({
   ),
 }))
 
+vi.mock('@/contexts/AnimationSettingsContext.jsx', () => ({
+  useAnimationSettings: () => ({ prefersReducedMotion: true }),
+}))
+
 vi.mock('@/services/documentService', () => ({
   default: {
     requestVaultDownloadLink: (...args) => requestVaultLinkMock(...args),

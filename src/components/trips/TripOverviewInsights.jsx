@@ -1,6 +1,7 @@
 import { motion } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { AutomationIndicator } from '@/components/common/AutomationIndicator.jsx'
 import { formatDate } from '@/utils/dateUtils'
 import { panelVariants, createStaggeredContainer, listItemVariants } from '@/lib/animation'
 
@@ -15,6 +16,8 @@ export function TripOverviewInsights({
   onOpenChecklist,
   onEnableDocumentsModule,
   priorityBadgeClass,
+  insightsStatus = 'idle',
+  insightsLabel,
 }) {
   return (
     <motion.div
@@ -25,11 +28,18 @@ export function TripOverviewInsights({
     >
       <motion.div variants={panelVariants}>
         <div className="rounded-xl bg-card shadow-sm">
-          <div className="p-5">
-            <h3 className="text-lg font-semibold text-foreground">What to pack next</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Instant snapshot of outstanding checklist items.
-            </p>
+          <div className="flex flex-wrap items-center justify-between gap-3 p-5">
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">What to pack next</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Instant snapshot of outstanding checklist items.
+              </p>
+            </div>
+            <AutomationIndicator
+              status={insightsStatus}
+              label={insightsLabel ?? (insightsStatus === 'syncing' ? 'Refreshing insights…' : 'Insights up to date')}
+              tone="primary"
+            />
           </div>
           <div className="space-y-3 border-t border-border px-5 py-4">
             {prioritizedChecklistItems.length ? (
@@ -77,11 +87,18 @@ export function TripOverviewInsights({
 
       <motion.div variants={panelVariants}>
         <div className="rounded-xl bg-card shadow-sm">
-          <div className="p-5">
-            <h3 className="text-lg font-semibold text-foreground">Expiring documents</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Keep an eye on key documents that need attention.
-            </p>
+          <div className="flex flex-wrap items-center justify-between gap-3 p-5">
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">Expiring documents</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Keep an eye on key documents that need attention.
+              </p>
+            </div>
+            <AutomationIndicator
+              status={documentsModuleEnabled ? insightsStatus : 'idle'}
+              label={documentsModuleEnabled ? insightsLabel ?? 'Insights up to date' : 'Documents disabled'}
+              tone={documentsModuleEnabled ? 'primary' : 'warning'}
+            />
           </div>
           <div className="space-y-3 border-t border-border px-5 py-4">
             {expiringDocuments.length ? (

@@ -17,6 +17,7 @@ import ProtectedRoute from './components/common/ProtectedRoute'
 import DashboardLayout from './components/layout/DashboardLayout'
 import ThemeToggle from './components/common/ThemeToggle'
 import MotionToggle from './components/common/MotionToggle'
+import HapticToggle from './components/common/HapticToggle'
 
 const RootLayout = () => (
   <>
@@ -25,6 +26,7 @@ const RootLayout = () => (
     </a>
     <div className="fixed right-4 top-4 z-50 flex items-center gap-2">
       <MotionToggle />
+      <HapticToggle />
       <ThemeToggle />
     </div>
     <Toaster />

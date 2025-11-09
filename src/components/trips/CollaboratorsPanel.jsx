@@ -10,10 +10,13 @@ import { Select } from '../ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
 import { Skeleton } from '../ui/skeleton'
 import { Switch } from '../ui/switch'
+import { AutomationIndicator } from '@/components/common/AutomationIndicator.jsx'
 import { formatDateTime, formatRelativeDate } from '../../utils/dateUtils'
 import { maskEmail } from '../../utils/privacy'
 import { DateTimePicker } from '../ui/date-picker'
 import { confirmToast } from '../../lib/confirmToast'
+import { GestureHint } from '@/components/common/GestureHint.jsx'
+import { useGestureHint } from '@/hooks/useGestureHint.js'
 
 const PERMISSION_LABELS = {
   view: 'View only',
@@ -83,9 +86,16 @@ export const CollaboratorsPanel = ({
   const [shareLinkFilter, setShareLinkFilter] = useState('')
   const [showArchivedShareLinks, setShowArchivedShareLinks] = useState(false)
   const [dismissedShareLinkIds, setDismissedShareLinkIds] = useState(() => new Set())
+  const { visible: shareLinkSwipeHintVisible, acknowledge: acknowledgeShareLinkHint } = useGestureHint('share-links-swipe', {
+    autoHideMs: 7000,
+  })
 
   const canManageCollaborators = permission?.level === 'admin'
   const canEditTrip = permission?.level === 'admin' || permission?.level === 'edit'
+  const collaboratorStatus = collaboratorsLoading ? 'syncing' : 'success'
+  const collaboratorLabel = collaboratorsLoading ? 'Syncing collaborators…' : 'Collaborators up to date'
+  const shareLinkStatus = shareLinksLoading ? 'syncing' : 'success'
+  const shareLinkLabel = shareLinksLoading ? 'Syncing share links…' : 'Share links up to date'
 
   const filteredCollaborators = useMemo(() => {
     if (!Array.isArray(collaborators) || !collaborators.length) {
@@ -413,10 +423,13 @@ export const CollaboratorsPanel = ({
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle className="text-lg font-semibold text-foreground">Collaborators</CardTitle>
-            <CardDescription>Manage who can view or edit this trip.</CardDescription>
+        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-2">
+            <div>
+              <CardTitle className="text-lg font-semibold text-foreground">Collaborators</CardTitle>
+              <CardDescription>Manage who can view or edit this trip.</CardDescription>
+            </div>
+            <AutomationIndicator status={collaboratorStatus} label={collaboratorLabel} tone="primary" />
           </div>
           {canManageCollaborators && (
             <form className="flex flex-col gap-2 md:flex-row md:items-center" onSubmit={handleInvite}>
@@ -601,9 +614,12 @@ export const CollaboratorsPanel = ({
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold text-foreground">Share Links</CardTitle>
-          <CardDescription>Create view-only links for guests or external partners.</CardDescription>
+        <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <CardTitle className="text-lg font-semibold text-foreground">Share Links</CardTitle>
+            <CardDescription>Create view-only links for guests or external partners.</CardDescription>
+          </div>
+          <AutomationIndicator status={shareLinkStatus} label={shareLinkLabel} tone="info" />
         </CardHeader>
         <CardContent className="space-y-4">
           {latestShareLink && (
@@ -730,8 +746,13 @@ export const CollaboratorsPanel = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {visibleShareLinks.map((link) => (
-                    <TableRow key={link.id}>
+                  {visibleShareLinks.map((link, index) => (
+                    <TableRow
+                      key={link.id}
+                      className="group relative overflow-hidden"
+                      onPointerDown={acknowledgeShareLinkHint}
+                      onTouchStart={acknowledgeShareLinkHint}
+                    >
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium text-foreground">{link.label || 'Untitled link'}</span>
@@ -781,9 +802,9 @@ export const CollaboratorsPanel = ({
                               >
                                 Hide
                               </Button>
-                            ) : (
-                              <Button
-                                variant="ghost"
+                              ) : (
+                                <Button
+                                  variant="ghost"
                                 size="sm"
                                 className="text-destructive hover:bg-destructive/10"
                                 onClick={() => handleRevokeShareLink(link)}
@@ -792,6 +813,14 @@ export const CollaboratorsPanel = ({
                               </Button>
                             )}
                           </div>
+                          {index === 0 && shareLinkSwipeHintVisible && !link.revokedAt && (
+                            <GestureHint
+                              visible
+                              icon="↔"
+                              message="Swipe to reveal actions"
+                              className="absolute right-4 top-1/2 -translate-y-1/2"
+                            />
+                          )}
                         </TableCell>
                       )}
                     </TableRow>

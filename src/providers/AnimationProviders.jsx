@@ -7,10 +7,12 @@ import AnimationSettingsContext from '@/contexts/AnimationSettingsContext.jsx'
 import { useReducedMotionPreference } from '@/hooks/useReducedMotionPreference.js'
 
 const MOTION_PREFERENCE_STORAGE_KEY = 'travel-checklist:motion-preference'
+const HAPTIC_STORAGE_KEY = 'travel-checklist:haptic-preference'
 
 function AnimationProviders({ children }) {
   const systemPrefersReducedMotion = useReducedMotionPreference()
   const [userMotionPreference, setUserMotionPreference] = useState('system')
+  const [enableHapticHints, setEnableHapticHints] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -19,6 +21,10 @@ function AnimationProviders({ children }) {
     const storedPreference = window.localStorage.getItem(MOTION_PREFERENCE_STORAGE_KEY)
     if (storedPreference === 'motion' || storedPreference === 'reduced' || storedPreference === 'system') {
       setUserMotionPreference(storedPreference)
+    }
+    const storedHaptic = window.localStorage.getItem(HAPTIC_STORAGE_KEY)
+    if (storedHaptic === 'enabled' || storedHaptic === 'disabled') {
+      setEnableHapticHints(storedHaptic === 'enabled')
     }
   }, [])
 
@@ -32,6 +38,16 @@ function AnimationProviders({ children }) {
     } else {
       window.localStorage.setItem(MOTION_PREFERENCE_STORAGE_KEY, preference)
     }
+  }, [])
+
+  const toggleHapticHints = useCallback((nextValue) => {
+    setEnableHapticHints((prev) => {
+      const resolved = typeof nextValue === 'boolean' ? nextValue : !prev
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(HAPTIC_STORAGE_KEY, resolved ? 'enabled' : 'disabled')
+      }
+      return resolved
+    })
   }, [])
 
   const prefersReducedMotion =
@@ -56,6 +72,15 @@ function AnimationProviders({ children }) {
     [prefersReducedMotion],
   )
 
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      setEnableHapticHints(false)
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(HAPTIC_STORAGE_KEY, 'disabled')
+      }
+    }
+  }, [prefersReducedMotion])
+
   const resolvedLenisOptions = useMemo(
     () =>
       prefersReducedMotion
@@ -77,6 +102,8 @@ function AnimationProviders({ children }) {
             prefersReducedMotion={prefersReducedMotion}
             userMotionPreference={userMotionPreference}
             setReducedMotionPreference={setReducedMotionPreference}
+            enableHapticHints={enableHapticHints}
+            setEnableHapticHints={toggleHapticHints}
           >
             {children}
           </LenisAccessibilityAdapter>
@@ -90,6 +117,8 @@ function LenisAccessibilityAdapter({
   prefersReducedMotion,
   userMotionPreference,
   setReducedMotionPreference,
+  enableHapticHints,
+  setEnableHapticHints,
   children,
 }) {
   const lenis = useLenis()
@@ -121,8 +150,10 @@ function LenisAccessibilityAdapter({
       resumeLenis,
       userMotionPreference,
       setReducedMotionPreference,
+      enableHapticHints,
+      setEnableHapticHints,
     }),
-    [pauseLenis, prefersReducedMotion, resumeLenis, setReducedMotionPreference, userMotionPreference],
+    [enableHapticHints, pauseLenis, prefersReducedMotion, resumeLenis, setEnableHapticHints, userMotionPreference, setReducedMotionPreference],
   )
 
   return (

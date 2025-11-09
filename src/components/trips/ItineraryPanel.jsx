@@ -29,6 +29,8 @@ import { cn } from '../../lib/utils'
 import { formatDateTime } from '../../utils/dateUtils'
 import { DateTimePicker } from '../ui/date-picker'
 import { confirmToast } from '../../lib/confirmToast'
+import { GestureHint } from '@/components/common/GestureHint.jsx'
+import { useGestureHint } from '@/hooks/useGestureHint.js'
 
 const toIsoString = (value) => {
   if (!value) return null
@@ -195,6 +197,9 @@ export const ItineraryPanel = ({
   const [activeMonth, setActiveMonth] = useState(() => startOfMonth(new Date()))
   const [selectedDayKey, setSelectedDayKey] = useState(null)
   const [viewMode, setViewMode] = useState('calendar')
+  const { visible: daySwipeHintVisible, acknowledge: acknowledgeDaySwipeHint } = useGestureHint('itinerary-day-swipe', {
+    autoHideMs: 8000,
+  })
 
   const canEditItinerary = permission?.level === 'admin' || permission?.level === 'edit'
 
@@ -288,6 +293,7 @@ export const ItineraryPanel = ({
   const highlightedDays = useMemo(() => new Set(dayKeys), [dayKeys])
   const selectedDayDate = selectedDayKey ? parseISO(selectedDayKey) : null
   const selectedDaySegments = selectedDayKey ? itineraryByDay[selectedDayKey] || [] : []
+  const hasMultipleScheduledDays = dayKeys.length > 1
 
   const handleChange = (field) => (event) => {
     setForm((prev) => ({ ...prev, [field]: event.target.value }))
@@ -370,6 +376,13 @@ export const ItineraryPanel = ({
   const handleSelectDay = (day) => {
     const key = getDateKey(day)
     setSelectedDayKey(key)
+    acknowledgeDaySwipeHint()
+  }
+
+  const handleDayScrollerInteraction = () => {
+    if (daySwipeHintVisible) {
+      acknowledgeDaySwipeHint()
+    }
   }
 
   const handleEditItem = (item) => {
@@ -698,6 +711,42 @@ export const ItineraryPanel = ({
               </section>
 
               <section className="space-y-5">
+                {hasMultipleScheduledDays && (
+                  <div className="relative">
+                    <div
+                      className="flex gap-2 overflow-x-auto pb-1"
+                      onScroll={handleDayScrollerInteraction}
+                      onPointerDown={handleDayScrollerInteraction}
+                      onTouchStart={handleDayScrollerInteraction}
+                    >
+                      {dayKeys.map((dayKey) => {
+                        const date = parseISO(dayKey)
+                        const isActive = selectedDayKey === dayKey
+                        return (
+                          <button
+                            key={`day-pill-${dayKey}`}
+                            type="button"
+                            onClick={() => handleSelectDay(date)}
+                            className={cn(
+                              'rounded-full border px-3 py-1.5 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary/50',
+                              isActive
+                                ? 'border-primary bg-primary/10 text-primary'
+                                : 'border-border bg-card text-muted-foreground hover:border-primary/40',
+                            )}
+                          >
+                            {format(date, 'MMM d')}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <GestureHint
+                      visible={daySwipeHintVisible}
+                      icon="↔"
+                      message="Swipe to jump between days"
+                      className="absolute right-0 -top-3"
+                    />
+                  </div>
+                )}
                 <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <h3 className="text-base font-semibold text-foreground">
